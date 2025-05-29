@@ -8,5 +8,6 @@ app = FastAPI()
 async def Hello():
     return('Hello')
 
+if __name__ == '__main__':
+    uvicorn.run(app, host = settings.host, port = settings.port)
 
-uvicorn.run(app, host = settings.host, port = settings.port)
