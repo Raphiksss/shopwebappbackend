@@ -1,6 +1,11 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 import uvicorn
-from core import settings
+from core import settings, db_helper
+from core.models import Base
+
+
+
 
 app = FastAPI()
 
