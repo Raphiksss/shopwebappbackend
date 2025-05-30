@@ -10,8 +10,9 @@ def text_data(
     title: str =Form(..., description = "Название товара"),
     description: str = Form(..., description= "Описание товара") ,
     price: int = Form(..., description="Цена товара"),
+    category: str | None = Form(..., description="Категория для товара"),
 ) ->"ProductCreate":
-    return ProductCreate(title = title, description = description, price = price)
+    return ProductCreate(title = title, description = description, price = price, category = category)
 
 def upload_foto(
     file: UploadFile = File(..., description="Изображение"),

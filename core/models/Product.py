@@ -6,6 +6,7 @@ class Product(Base):
     title: Mapped[str]
     description: Mapped[str]
     price: Mapped[int]
+    category: Mapped[str | None]
     data: Mapped[bytes] = Column(LargeBinary, nullable=False)
     mimetype: Mapped[str] = Column(String(50), nullable=False)
 

@@ -1,7 +1,11 @@
+import base64
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.datastructures import UploadFile
-from api_products.schemas import ProductCreate
+from unicodedata import category
+
+from api_products.schemas import ProductCreate, ProductRead
 from core.models import Product
 
 
@@ -13,8 +17,10 @@ async def create_product_crud(session: AsyncSession, product_in: ProductCreate, 
             title = product_in.title,
             description = product_in.description,
             price = product_in.price,
+            category = product_in.category,
             data = content,
             mimetype = file.content_type,
+
     )
     session.add(product)
     await session.commit()
@@ -22,5 +28,22 @@ async def create_product_crud(session: AsyncSession, product_in: ProductCreate, 
     return product
 
 
+async def get_products_crud(session:AsyncSession):
+    stmt = select(Product).order_by(Product.id)
+    result = await session.execute(stmt)
+    products = result.scalars().all()
+    output = []
+    for prod in products:
+        b64 = base64.b64encode(prod.data).decode("ascii")
+        output.append(
+            ProductRead(
+                id=prod.id,
+                title=prod.title,
+                description=prod.description,
+                price=prod.price,
+                image_b64=f"data:{prod.mimetype};base64,{b64}"
+            )
+        )
+    return output
 
 
