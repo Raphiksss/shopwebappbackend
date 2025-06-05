@@ -1,11 +1,11 @@
 import base64
+from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.datastructures import UploadFile
 from unicodedata import category
-
-from api_products.schemas import ProductCreate, ProductRead
+from api_products.schemas import ProductCreate, ProductRead, ProductUpdatePartial
 from core.models import Product
 
 
@@ -45,5 +45,18 @@ async def get_products_crud(session:AsyncSession):
             )
         )
     return output
+
+async def update_title(session: AsyncSession, product: Product, new_title: str ):
+    product.title = new_title
+    await session.commit()
+    await session.refresh(product)
+    return product
+
+
+async def update_description(session: AsyncSession, product: Product, new_description :  str):
+    product.description = new_description
+    await session.commit()
+    await session.refresh(product)
+    return product
 
 

@@ -1,9 +1,9 @@
-from typing import Optional
+from typing import Optional, Type
 from core.db_helper import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.models import Product
 from .schemas import ProductCreate
-from fastapi import Form, UploadFile, File, HTTPException, Depends
+from fastapi import Form, UploadFile, File, HTTPException, Depends, status
 
 
 def text_data(
@@ -21,3 +21,11 @@ def upload_foto(
     if file.content_type not in allowed:
         raise HTTPException(415, f"Недопустимый тип файла: {file.content_type}")
     return file
+
+
+async def get_product_by_id(product_id: int, session: AsyncSession = Depends(get_session)) -> Optional[Product]:
+    product = await session.get(Product, product_id)
+    return product
+
+
+
