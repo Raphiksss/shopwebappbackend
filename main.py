@@ -6,6 +6,9 @@ import uvicorn
 from bot import run_polling
 from core import settings, db_helper
 from api_products import router
+import logging
+
+logger = logging.getLogger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -15,6 +18,8 @@ async def lifespan(app: FastAPI):
         loop.run_until_complete(run_polling())
     t = threading.Thread(target=start_bot_loop, daemon=True)
     t.start()
+    logger.warning("Бот запущен")
+
     yield
 
 app = FastAPI(lifespan = lifespan)
