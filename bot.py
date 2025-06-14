@@ -1,8 +1,7 @@
 import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-
-from api_users.crud import create_user
+from api_users.crud import create_user, get_user
 from api_users.schemas import UserCreate
 from core.db_helper import get_session
 
@@ -21,6 +20,12 @@ async def cmd_start(message: types.Message):
         break
     await message.answer("Привет")
 
+@dp.message(Command(commands=["profile"]))
+async def cmd_profile(message: types.Message):
+    async for session in get_session():
+        profile = await get_user(tg_id = message.from_user.id,session = session)
+        await message.answer(f"Ваши данные {profile.username},{profile.balance}")
+        break
 
 async def run_polling():
     try:

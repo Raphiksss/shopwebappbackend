@@ -1,10 +1,10 @@
-from typing import Optional, Annotated
-from fastapi import APIRouter, Depends, File, HTTPException
+
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.datastructures import UploadFile
 from core.models import Product
-from .crud import create_product_crud, get_products_crud, update_title, update_description
-from .schemas import ProductRead, ProductCreate, ProductUpdatePartial, ProductReturn
+from .crud import create_product_crud, get_products_crud, update_title
+from .schemas import ProductRead, ProductCreate
 from core.db_helper import get_session
 from .dependensiec import text_data,upload_foto, get_product_by_id
 

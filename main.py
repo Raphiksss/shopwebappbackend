@@ -8,6 +8,8 @@ from core import settings
 from api_products import router
 import logging
 from fastapi.middleware.cors import CORSMiddleware
+from api_users import router as users_router
+
 
 logger = logging.getLogger()
 
@@ -27,7 +29,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan = lifespan)
 app.include_router(router)
-
+app.include_router(users_router)
 app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_credentials=True,allow_methods=["*"],allow_headers=["*"],)
 
 
