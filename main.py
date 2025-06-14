@@ -4,9 +4,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 import uvicorn
 from bot import run_polling
-from core import settings, db_helper
+from core import settings
 from api_products import router
 import logging
+from fastapi.middleware.cors import CORSMiddleware
 
 logger = logging.getLogger()
 
@@ -22,8 +23,13 @@ async def lifespan(app: FastAPI):
 
     yield
 
+
+
 app = FastAPI(lifespan = lifespan)
 app.include_router(router)
+
+app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_credentials=True,allow_methods=["*"],allow_headers=["*"],)
+
 
 @app.get('/')
 async def hello():
