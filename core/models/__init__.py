@@ -2,4 +2,4 @@
 __all__ = ( "Product", "Base", "User")
 from .Product import Product
 from .Base import Base
-from .users import User
+from .Users import User
