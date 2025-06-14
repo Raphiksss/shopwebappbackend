@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
         loop.run_until_complete(run_polling())
     t = threading.Thread(target=start_bot_loop, daemon=True)
     t.start()
-    logger.warning("Бот запущен")
+    logger.info("Бот запущен")
 
     yield
 
@@ -30,5 +30,5 @@ async def hello():
     return 'Hello'
 
 if __name__ == '__main__':
-    uvicorn.run(app, host = settings.host, port = settings.port)
+    uvicorn.run(app, host = settings.host, port = settings.port, log_level = "info")
 
