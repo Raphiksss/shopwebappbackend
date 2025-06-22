@@ -4,9 +4,10 @@ from aiogram.filters import Command
 from api_users.crud import create_user, get_user
 from api_users.schemas import UserCreate
 from core.db_helper import get_session
+from core import settings
 
 
-API_TOKEN = "7971991234:AAEGi3z3rpEcmzMI8PN3HQJtC0j7ipY-rHk"
+API_TOKEN = settings.bot_token
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
