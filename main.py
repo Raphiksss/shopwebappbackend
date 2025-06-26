@@ -25,12 +25,14 @@ async def lifespan(app: FastAPI):
 
     yield
 
-
+origins = [
+    "http://localhost:5173"
+]
 
 app = FastAPI(lifespan = lifespan)
 app.include_router(router)
 app.include_router(users_router)
-app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_credentials=True,allow_methods=["*"],allow_headers=["*"],)
+app.add_middleware(CORSMiddleware,allow_origins=origins,allow_credentials=False,allow_methods=["*"],allow_headers=["*"],)
 
 
 @app.get('/')
@@ -39,5 +41,5 @@ async def hello():
 
 if __name__ == '__main__':
     configure_logging()
-    uvicorn.run(app, host = settings.host, port = settings.port, log_level = "info")
+    uvicorn.run(app, host = settings.host, port = settings.port)
 
