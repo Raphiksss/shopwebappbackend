@@ -1,11 +1,9 @@
 import base64
-from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.datastructures import UploadFile
-from unicodedata import category
-from api_products.schemas import ProductCreate, ProductRead, ProductUpdatePartial
+from api_products.schemas import ProductCreate, ProductRead
 from core.models import Product
 
 
@@ -59,4 +57,16 @@ async def update_description(session: AsyncSession, product: Product, new_descri
     await session.refresh(product)
     return product
 
+
+async def get_product(session:AsyncSession, product_id: int):
+    product = await session.get(Product, product_id)
+    b64 = base64.b64encode(product.data).decode("ascii")
+    output  = ProductRead(
+        id = product.id,
+        title = product.title,
+        description = product.description,
+        price = product.price,
+        image_b64 = f'data:{product.mimetype};base64,{b64}'
+    )
+    return output
 
