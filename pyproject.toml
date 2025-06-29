@@ -12,7 +12,8 @@ dependencies = [
     "sqlalchemy (>=2.0.41,<3.0.0)",
     "aiosqlite (>=0.21.0,<0.22.0)",
     "alembic (>=1.16.1,<2.0.0)",
-    "aiogram (>=3.20.0.post0,<4.0.0)"
+    "aiogram (>=3.20.0.post0,<4.0.0)",
+    "redis (>=6.2.0,<7.0.0)"
 ]
 
 
