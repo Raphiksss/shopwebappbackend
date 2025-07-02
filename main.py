@@ -4,7 +4,7 @@ import threading
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 import uvicorn
-from bot import run_polling
+from bot import bot, dp
 from core import settings
 from api_products import router
 from core import configure_logging
@@ -16,13 +16,18 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    def start_bot_loop():
+    def _start():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(run_polling())
-    t = threading.Thread(target=start_bot_loop, daemon=True)
+        loop.run_until_complete(
+            dp.start_polling(
+                bot,
+                skip_updates=True,
+                handle_signals=False
+            )
+        )
+    t = threading.Thread(target=_start, daemon=True)
     t.start()
-
     yield
 
 
