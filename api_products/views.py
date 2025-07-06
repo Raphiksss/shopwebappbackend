@@ -12,10 +12,9 @@ from .dependensiec import text_data,upload_foto, get_product_by_id
 router = APIRouter(tags = ["Products"])
 
 @router.post('/create_product/', summary = "Создать товар с изображением")
-async def create_product(session: AsyncSession = Depends(get_session),
-                         product_in:ProductCreate = Depends(text_data),
-                         file: UploadFile = Depends(upload_foto)
-):
+async def create_product(product_in: ProductCreate = Depends(text_data),
+                         session: AsyncSession = Depends(get_session),
+                         file: UploadFile = Depends(upload_foto)):
                         await create_product_crud(session, product_in, file)
                         return "succes"
 
