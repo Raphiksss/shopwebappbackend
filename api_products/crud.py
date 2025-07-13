@@ -44,7 +44,7 @@ async def get_products_crud(session:AsyncSession):
         )
     return output
 
-async def update_title(session: AsyncSession, product: Product, new_title: str ):
+async def update_title(session: AsyncSession, product: Product, new_title: str):
     product.title = new_title
     await session.commit()
     await session.refresh(product)

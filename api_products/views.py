@@ -6,7 +6,7 @@ from core.models import Product
 from .crud import create_product_crud, get_products_crud, update_title, get_product
 from .schemas import ProductRead, ProductCreate, ProductReturn
 from core.db_helper import get_session
-from .dependensiec import text_data,upload_foto, get_product_by_id
+from .dependensiec import text_data,upload_foto, get_product_by_id_dp
 
 
 router = APIRouter(tags = ["Products"])
@@ -28,12 +28,7 @@ async def get_product_by_id(product_id: int,session: AsyncSession = Depends(get_
     product = await get_product(session, product_id)
     return product
 
-@router.patch('/{product_id}/update_title/', summary = "Обновить название",)
-async def path_title(new_title : str, product_id: int, product: Product = Depends(get_product_by_id), session: AsyncSession = Depends(get_session)):
-    new_product = await update_title(session,product, new_title)
+@router.patch('/update_title/', summary = "Обновить название",)
+async def path_title(new_title : str, product: Product = Depends(get_product_by_id_dp), session: AsyncSession = Depends(get_session)):
+    await update_title(session,product, new_title)
     return "succes"
-#
-# @router.patch('/{product_id}/update_description/', summary = "Обновить описание")
-# async def path_description(new_title)
-
-

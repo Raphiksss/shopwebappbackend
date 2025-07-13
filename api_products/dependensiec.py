@@ -23,7 +23,7 @@ def upload_foto(
     return file
 
 
-async def get_product_by_id(product_id: int, session: AsyncSession = Depends(get_session)) -> Optional[Product]:
+async def get_product_by_id_dp(product_id: int, session: AsyncSession = Depends(get_session)) -> Optional[Product]:
     product = await session.get(Product, product_id)
     return product
 
