@@ -8,11 +8,14 @@ from fastapi import Form, UploadFile, File, HTTPException, Depends, status
 
 def text_data(
     title: str =Form(..., description = "Название товара"),
+    subtitle: str = Form(..., description= "Подзаголовок товара ") ,
     description: str = Form(..., description= "Описание товара") ,
     price: int = Form(..., description="Цена товара"),
+    rating: float = Form(..., description="Рейтинг товара"),
     category: str | None = Form(..., description="Категория для товара"),
+
 ) ->"ProductCreate":
-    return ProductCreate(title = title, description = description, price = price, category = category)
+    return ProductCreate(title = title, subtitle = subtitle, description = description, price = price,  rating = rating, category = category)
 
 def upload_foto(
     file: UploadFile = File(..., description="Изображение"),
@@ -23,8 +26,10 @@ def upload_foto(
     return file
 
 
-async def get_product_by_id_dp(product_id: int, session: AsyncSession = Depends(get_session)) -> Optional[Product]:
+async def get_product_by_id_dp(product_id: int, session: AsyncSession = Depends(get_session)) -> Type[Product] | None:
     product = await session.get(Product, product_id)
+    if not product:
+        raise HTTPException(404, "Товар отсутсвует ")
     return product
 
 

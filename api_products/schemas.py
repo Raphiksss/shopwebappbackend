@@ -7,17 +7,22 @@ from sqlalchemy import Column, LargeBinary
 
 class ProductCreate(BaseModel):
     title: str
+    subtitle: str
     description: str
     price: int
+    rating: float
     category: str | None
+
 
 class ProductRead(BaseModel):
     id: int
     title: str
+    subtitle: str
     description:str
     price: int
-    image_b64: str
-
+    image: str
+    rating: float
+    category: str | None
     model_config = ConfigDict(from_attributes=True)
 
 class ProductUpdatePartial(BaseModel):

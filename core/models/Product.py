@@ -7,7 +7,12 @@ class Product(Base):
     description: Mapped[str]
     price: Mapped[int]
     category: Mapped[str | None]
-    data: Mapped[bytes] = Column(LargeBinary, nullable=False)
-    mimetype: Mapped[str] = Column(String(50), nullable=False)
+    image: Mapped[str]
+    subtitle: Mapped[str]
+    rating: Mapped[float]
+
+
+
+
 
 
