@@ -7,7 +7,7 @@ until mc alias set local http://localhost:9000 "${MINIO_ROOT_USER}" "${MINIO_ROO
   sleep 1
 done
 
-mc mb local/just-images
+mc mb local/just-images || true
 mc anonymous set download local/just-images
 
 wait

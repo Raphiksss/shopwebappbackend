@@ -56,6 +56,6 @@ s3 = S3Client(
         access_key   = MINIO_ROOT_USER,
         secret_key   = MINIO_ROOT_PASSWORD,
         endpoint     = f"http://{MINIO_HOST}:{MINIO_PORT}",
-        bucket_name  = "just-imagess"
+        bucket_name  = "just-images"
 )
 
