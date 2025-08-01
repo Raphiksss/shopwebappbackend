@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .crud import add_product, get_card, del_product, del_all_card
+from .crud import add_product, get_card, del_product, del_all_card, del_all_one_product
 
 router = APIRouter(tags = ["Cart"])
 
@@ -20,4 +20,8 @@ async def delete_product_from_cart(tg_id:int, prod_id = int):
 @router.delete("/delete_cart/{tg_id}/", summary = "Удалить все с корзины")
 async def delete_cart(tg_id:int):
     del_all_card(tg_id)
+    return "succes"
+@router.delete("/delete_full_one_product/{tg_id}/", summary = "Удалить полностью один товар с корзины")
+async def delete_full_one_product(tg_id:int,prod_id: int):
+    del_all_one_product(tg_id, prod_id)
     return "succes"

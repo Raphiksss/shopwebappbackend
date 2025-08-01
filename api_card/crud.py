@@ -18,6 +18,10 @@ def del_product(tg_id:int, prod_id: int):
         else:
             r.json().numincrby(f"card:{tg_id}", f"$.products.{prod_id}", -1)
 
+def del_all_one_product(tg_id:int, prod_id: int):
+    with redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0) as r:
+        r.json().delete(f"card:{tg_id}", f"$.products.{prod_id}")
+
 def del_all_card(tg_id: int):
     with redis.Redis(host = REDIS_HOST, port = REDIS_PORT, db = 0) as r:
         r.json().delete(f"card:{tg_id}")
