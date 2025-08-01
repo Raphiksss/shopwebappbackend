@@ -1,10 +1,16 @@
 from sqlalchemy import Integer
-from sqlalchemy.orm import Mapped, mapped_column
-
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .Base import Base
+from .Favorites import favorites_table
+
 
 class User(Base):
     tg_id: Mapped[int] = mapped_column(Integer, unique=True, index=True, nullable=False)
     username: Mapped[str]
     balance = mapped_column(Integer, default=0)
+    favorites: Mapped[list["Product"]] = relationship(
+        secondary=favorites_table,
+        back_populates="fans",
+        lazy="selectin",
+    )
 
