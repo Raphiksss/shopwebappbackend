@@ -8,14 +8,13 @@ from fastapi import Form, UploadFile, File, HTTPException, Depends, status
 
 def text_data(
     title: str =Form(..., description = "Название товара"),
-    subtitle: str = Form(..., description= "Подзаголовок товара ") ,
     description: str = Form(..., description= "Описание товара") ,
     price: int = Form(..., description="Цена товара"),
     rating: float = Form(..., description="Рейтинг товара"),
     category: str | None = Form(..., description="Категория для товара"),
 
 ) ->"ProductCreate":
-    return ProductCreate(title = title, subtitle = subtitle, description = description, price = price,  rating = rating, category = category)
+    return ProductCreate(title = title, description = description, price = price,  rating = rating, category = category)
 
 def upload_foto(
     file: UploadFile = File(..., description="Изображение"),

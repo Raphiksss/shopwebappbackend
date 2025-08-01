@@ -10,7 +10,6 @@ class Product(Base):
     price: Mapped[int]
     category: Mapped[str | None]
     image: Mapped[str]
-    subtitle: Mapped[str]
     rating: Mapped[float]
     fans: Mapped[list[User]] = relationship(
         secondary=favorites_table,

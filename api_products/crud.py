@@ -15,7 +15,6 @@ async def create_product_crud(session: AsyncSession, product_in: ProductCreate, 
     object_name = await s3_client.upload_file(file)
     product = Product(
             title = product_in.title,
-            subtitle = product_in.subtitle,
             description = product_in.description,
             price = product_in.price,
             category = product_in.category,

@@ -7,7 +7,6 @@ from sqlalchemy import Column, LargeBinary
 
 class ProductCreate(BaseModel):
     title: str
-    subtitle: str
     description: str
     price: int
     rating: float
@@ -17,7 +16,6 @@ class ProductCreate(BaseModel):
 class ProductRead(BaseModel):
     id: int
     title: str
-    subtitle: str
     description:str
     price: int
     image: str
