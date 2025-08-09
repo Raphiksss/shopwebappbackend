@@ -2,6 +2,10 @@ from sqlalchemy.orm import Mapped, relationship
 from .Users import User
 from .Base import Base
 from .Favorites import favorites_table
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .Review import Review
 
 
 class Product(Base):
@@ -16,7 +20,7 @@ class Product(Base):
         back_populates="favorites",
         lazy="selectin",
     )
-
+    reviews: Mapped[list["Review"]] = relationship(back_populates = "product")
 
 
 
