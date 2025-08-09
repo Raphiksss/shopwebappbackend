@@ -10,7 +10,7 @@ from api_products import router
 from core import configure_logging
 from fastapi.middleware.cors import CORSMiddleware
 from api_users import router as users_router
-from api_card import cart_router
+from api_cart import cart_router
 
 logger = logging.getLogger(__name__)
 
