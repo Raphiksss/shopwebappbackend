@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.datastructures import UploadFile
@@ -6,7 +5,7 @@ from core.models import Product
 from .crud import create_product_crud, get_products_crud, update_title, delete_product
 from .schemas import ProductRead, ProductCreate, ProductReturn
 from core.db_helper import get_session
-from .dependensiec import text_data,upload_foto, get_product_by_id_dp
+from .dependencies import text_data,upload_foto, get_product_by_id_dp
 
 
 router = APIRouter(tags = ["Products"], prefix = "/products")
