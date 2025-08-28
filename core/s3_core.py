@@ -3,11 +3,12 @@ from aiobotocore.session import get_session
 from botocore.config import Config
 from fastapi import HTTPException
 import os
+from .config import settings
 
-MINIO_ROOT_USER = os.getenv('MINIO_ROOT_USER', 'admin')
-MINIO_ROOT_PASSWORD = os.getenv('MINIO_ROOT_PASSWORD', 'secret123')
-MINIO_HOST = os.getenv('MINIO_HOST', 'localhost')
-MINIO_PORT = os.getenv('MINIO_PORT', 9000)
+MINIO_ROOT_USER = settings.DB.MINIO_ROOT_USER
+MINIO_ROOT_PASSWORD = settings.DB.MINIO_ROOT_PASSWORD
+MINIO_HOST = settings.DB.MINIO_HOST
+MINIO_PORT = settings.DB.MINIO_PORT
 
 
 class S3Client:
@@ -50,7 +51,7 @@ class S3Client:
                 ContentType=ctype,
                 ContentDisposition="inline"
             )
-        return object_name
+        return f"http://localhost:9000/{self.bucket_name}/{object_name}"
 
 s3 = S3Client(
         access_key   = MINIO_ROOT_USER,

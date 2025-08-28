@@ -1,8 +1,9 @@
 import redis
 import os
+from core import settings
 
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+REDIS_HOST = settings.DB.REDIS_HOST
+REDIS_PORT = settings.DB.REDIS_PORT
 
 def add_product(tg_id:int, prod_id:int):
     with redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0) as r:
