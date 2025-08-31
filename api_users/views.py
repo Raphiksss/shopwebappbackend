@@ -14,11 +14,12 @@ async def get_user_by_tg_id(tg_id: int, session: AsyncSession = Depends(get_sess
     profile = await get_user(tg_id = tg_id, session=session)
     return profile
 
-@router.post("/create_user/", summary = "Создать пользователя")
+@router.post("/create_user/", summary = "Создать пользователя", status_code = status.HTTP_201_CREATED)
 async def create_user(user: UserCreate, session:AsyncSession = Depends(get_session)):
     user = User(**user.model_dump())
     session.add(user)
     await session.commit()
+    return user
 
 @router.get("/users/{user_id}/favorites",response_model=list[int],summary="ID товаров, добавленных пользователем в избранное")
 async def list_favorites(user_id: int, session: Session = Depends(get_session)):
