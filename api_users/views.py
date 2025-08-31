@@ -67,7 +67,8 @@ async def remove_favorite(
             favorites_table.c.product_id == product_id
         )
     )
-    if result.rowcount == 0:
+    if not result:
         raise HTTPException(status_code=404, detail="Favorite not found")
     await session.commit()
+
 
