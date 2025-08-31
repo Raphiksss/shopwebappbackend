@@ -51,7 +51,7 @@ class S3Client:
                 ContentType=ctype,
                 ContentDisposition="inline"
             )
-        return f'{object_name}'
+        return object_name
 
 s3 = S3Client(
         access_key   = MINIO_ROOT_USER,
