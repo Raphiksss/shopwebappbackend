@@ -15,14 +15,14 @@ async def get_user_by_tg_id(tg_id: int, session: AsyncSession = Depends(get_sess
     return profile
 
 @router.post("/create_user/", summary = "Создать пользователя", status_code = status.HTTP_201_CREATED)
-async def create_user(user: UserCreate, session:AsyncSession = Depends(get_session)):
+async def create_user(user: UserCreate, session: AsyncSession = Depends(get_session)):
     user = User(**user.model_dump())
     session.add(user)
     await session.commit()
     return user
 
 @router.get("/users/{user_id}/favorites",response_model=list[int],summary="ID товаров, добавленных пользователем в избранное")
-async def list_favorites(user_id: int, session: Session = Depends(get_session)):
+async def list_favorites(user_id: int, session: AsyncSession = Depends(get_session)):
     stmt = (
         select(Product.id)
         .join(favorites_table, favorites_table.c.product_id == Product.id)
@@ -39,7 +39,7 @@ async def list_favorites(user_id: int, session: Session = Depends(get_session)):
 async def add_favorite(
     user_id: int,
     product_id: int,
-    session: Session = Depends(get_session)
+    session: AsyncSession = Depends(get_session)
 ):
     await session.execute(
         favorites_table.insert().values(
@@ -59,17 +59,14 @@ async def add_favorite(
 async def remove_favorite(
     user_id: int,
     product_id: int,
-    session: Session = Depends(get_session)
+    session: AsyncSession = Depends(get_session)
 ):
-    result = session.execute(
-        delete(favorites_table)
-        .where(
-            favorites_table.c.user_id    == user_id,
-            favorites_table.c.product_id == product_id
-        )
-    )
-    if not result:
+    stmt = delete(favorites_table).where(favorites_table.c.user_id    == user_id,favorites_table.c.product_id == product_id)
+    result = await session.execute(stmt)
+    if result.rowcount == 0:  # ничего не удалилось
+        await session.rollback()
         raise HTTPException(status_code=404, detail="Favorite not found")
     await session.commit()
+    return None
 
 
