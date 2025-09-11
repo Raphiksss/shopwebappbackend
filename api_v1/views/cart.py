@@ -4,12 +4,12 @@ from ..schemas.general import ErrorResponse
 
 router = APIRouter(tags=["Cart"])
 
-@router.post("/add_to_cart/{tg_id}/", summary = "Добавить в коризну", status_code = status.HTTP_201_CREATED)
+@router.post("/{tg_id}/", summary = "Добавить в коризну", status_code = status.HTTP_201_CREATED)
 async def add_to_cart(tg_id: int, prod_id: int):
     return cart_services.add_product(tg_id = tg_id, prod_id = prod_id)
 
 
-@router.get("/get_cart/{tg_id}/", summary = "Получить корзину пользователя", status_code = status.HTTP_200_OK)
+@router.get("/{tg_id}/", summary = "Получить корзину пользователя", status_code = status.HTTP_200_OK)
 async def get_cart(tg_id:int):
     return cart_services.get_card(tg_id)
 
