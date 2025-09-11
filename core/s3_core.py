@@ -51,7 +51,7 @@ class S3Client:
                 ContentType=ctype,
                 ContentDisposition="inline"
             )
-        return object_name
+        return f"http://localhost:9000/{self.bucket_name}/{object_name}"
 
 s3 = S3Client(
         access_key   = MINIO_ROOT_USER,

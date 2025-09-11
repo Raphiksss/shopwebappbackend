@@ -2,7 +2,7 @@ from typing import Optional, Type
 from core.db_helper import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.models import Product
-from .schemas import ProductCreate
+from ..schemas.products import ProductCreate
 from fastapi import Form, UploadFile, File, HTTPException, Depends, status
 
 
@@ -21,14 +21,14 @@ def upload_foto(
     ) -> UploadFile:
     allowed = {"image/png", "image/jpeg", "image/webp"}
     if file.content_type not in allowed:
-        raise HTTPException(415, f"Недопустимый тип файла: {file.content_type}")
+        raise HTTPException(415, "Некоректный формат файла")
     return file
 
 
-async def get_product_by_id_dp(product_id: int, session: AsyncSession = Depends(get_session)) -> Type[Product] | None:
+async def get_product_dp(product_id: int, session: AsyncSession = Depends(get_session)) -> Type[Product] | None:
     product = await session.get(Product, product_id)
     if not product:
-        raise HTTPException(404, "Товар отсутсвует ")
+        raise HTTPException(404, detail="Товар не найден")
     return product
 
 

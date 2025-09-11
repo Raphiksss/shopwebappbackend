@@ -1,7 +1,5 @@
 from typing import Optional
-
 from pydantic import BaseModel,ConfigDict
-from sqlalchemy import Column, LargeBinary
 
 
 
@@ -18,17 +16,10 @@ class ProductRead(BaseModel):
     title: str
     description:str
     price: int
-    image: str
+    category: str | None
     rating: float
-    category: str | None
+    image: str
     model_config = ConfigDict(from_attributes=True)
-
-class ProductUpdatePartial(BaseModel):
-    title: str | None
-    description: str | None
-    price: int | None
-    category: str | None
-
 
 class ProductReturn(BaseModel):
     id:          int
@@ -38,7 +29,3 @@ class ProductReturn(BaseModel):
     category:    Optional[str]
 
     model_config = ConfigDict(from_attributes=True)
-
-
-
-

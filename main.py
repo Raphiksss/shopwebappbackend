@@ -6,11 +6,11 @@ from fastapi import FastAPI
 import uvicorn
 from bot import bot, dp
 from core import settings
-from api_products import router
 from core import configure_logging
 from fastapi.middleware.cors import CORSMiddleware
-from api_users import router as users_router
-from api_cart import cart_router
+from api_v1 import router as v1_router
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +32,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan = lifespan)
-app.include_router(router)
-app.include_router(users_router)
-app.include_router(cart_router)
+
+app.include_router(v1_router)
 app.add_middleware(CORSMiddleware,allow_origins=settings.origins,allow_credentials=False,allow_methods=["*"],allow_headers=["*"],)
 
 
