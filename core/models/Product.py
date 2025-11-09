@@ -1,4 +1,6 @@
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy.orm import Mapped, relationship, mapped_column
+from sqlalchemy.sql.schema import ForeignKey
+
 from .Users import User
 from .Base import Base
 from .Favorites import favorites_table
@@ -6,13 +8,13 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .Review import Review
-
+    from .Category import Category
 
 class Product(Base):
     title: Mapped[str]
     description: Mapped[str]
     price: Mapped[int]
-    category: Mapped[str | None]
+    category_title: Mapped[str] = mapped_column(ForeignKey("categorys.title"), nullable=True)
     image: Mapped[str]
     rating: Mapped[float]
     fans: Mapped[list[User]] = relationship(
@@ -21,8 +23,7 @@ class Product(Base):
         lazy="selectin",
     )
     reviews: Mapped[list["Review"]] = relationship(back_populates = "product")
-
-
+    category: Mapped["Category"] = relationship(back_populates = "products")
 
 
 

@@ -16,7 +16,7 @@ class ProductRead(BaseModel):
     title: str
     description:str
     price: int
-    category: str | None
+    category_title: str | None
     rating: float
     image: str
     model_config = ConfigDict(from_attributes=True)

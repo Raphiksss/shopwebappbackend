@@ -16,11 +16,11 @@ class DB_Settings(BaseSettings):
     REDIS_PORT:int = Field(6379, validation_alias = 'REDIS_PORT' )
 
 class Settings(BaseSettings):
-    host : str = '127.0.0.2'
+    host : str = 'localhost'
     port: int = 8000
     logging_level: str = 'ERROR'
     bot_token: str = Field(validation_alias = 'BOT_TOKEN')
-    origins: List[str] = ["http://localhost:5173"]
+    origins: List[str] = ["http://localhost:5173", "http://10.177.93.85:5173"]
     DB: DB_Settings = DB_Settings()
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)

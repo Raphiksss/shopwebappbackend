@@ -12,7 +12,7 @@ async def create_product(data:ProductCreate,image_url:str,session:AsyncSession) 
         description = data.description,
         price = data.price,
         rating = data.rating,
-        category = data.category,
+        category_title = data.category,
         image = image_url
     )
     created = await prod_repo.create_product(session,new_product)
