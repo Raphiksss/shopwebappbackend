@@ -4,7 +4,7 @@ import threading
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 import uvicorn
-from bot import bot, dp
+from bot.bot import bt, dp
 from core import settings
 from core import configure_logging
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,7 +21,7 @@ async def lifespan(app: FastAPI):
         asyncio.set_event_loop(loop)
         loop.run_until_complete(
             dp.start_polling(
-                bot,
+                bt,
                 skip_updates=True,
                 handle_signals=False
             )

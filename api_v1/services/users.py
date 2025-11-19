@@ -13,7 +13,7 @@ async def create_user(user: users_schemas.UserCreate, session: AsyncSession):
         raise HTTPException(status_code=409, detail="User already exists")
     return res
 
-async def get_user(tg_id: int, session: AsyncSession):
+async def get_user(tg_id: int, session: AsyncSession) -> User:
     res = await users_repository.get_user(tg_id, session)
     if not res:
         raise HTTPException(status_code=404, detail='User not found')

@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 from sqlalchemy.sql.schema import ForeignKey
+from sqlalchemy.sql.sqltypes import Enum
 
 from .Users import User
 from .Base import Base
@@ -24,6 +25,6 @@ class Product(Base):
     )
     reviews: Mapped[list["Review"]] = relationship(back_populates = "product")
     category: Mapped["Category"] = relationship(back_populates = "products")
-
-
+    product_type: Mapped[str] = mapped_column(Enum("instantly", "notinstantly", name="processing_mode"), server_default="instantly")
+    product_data: Mapped[str|None] = mapped_column(server_default=None, nullable=True)
 
