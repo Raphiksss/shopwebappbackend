@@ -27,3 +27,10 @@ async def create_user(user:UserCreate, session: AsyncSession = Depends(get_sessi
 async def get_user(tg_id: int, session: AsyncSession = Depends(get_session)):
     return await users_services.get_user(tg_id, session)
 
+@router.post("/replenisment/stars/", summary = "Пополнение баланса пользователем", status_code = status.HTTP_200_OK)
+async def replenishment_balance(tg_id: int, amount: int):
+    return await users_services.replenishment_balance_stars(tg_id, amount)
+
+@router.post("/replenisment/crypto/", summary = "Пополнение баланса пользователем", status_code = status.HTTP_200_OK)
+async def replenishment_balance_cr(tg_id: int, amount: int):
+    return await users_services.replenishment_balance_crypto_bot(tg_id, amount)

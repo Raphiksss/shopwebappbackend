@@ -18,3 +18,9 @@ async def get_users(session: AsyncSession):
     stmt = select(User).order_by(User.id)
     users = await session.execute(stmt)
     return users.scalars().all()
+
+async def add_balance(tg_id: int, amount: int, session: AsyncSession):
+    user = await get_user(tg_id, session)
+    user.balance += amount
+    await session.commit()
+    return user

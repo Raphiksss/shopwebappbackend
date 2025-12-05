@@ -15,6 +15,11 @@ class DB_Settings(BaseSettings):
     REDIS_HOST: str = Field('localhost', validation_alias = 'REDIS_HOST')
     REDIS_PORT:int = Field(6379, validation_alias = 'REDIS_PORT' )
 
+    RABBITMQ_HOST: str = Field('localhost', validation_alias='RABBITMQ_HOST')
+    RABBITMQ_PORT: int = Field(5672, validation_alias='RABBITMQ_PORT')
+    RABBITMQ_USER: str = Field('admin', validation_alias='RABBITMQ_USER')
+    RABBITMQ_PASSWORD: str = Field('admin123', validation_alias='RABBITMQ_PASSWORD')
+
     model_config = SettingsConfigDict(extra='ignore')
 
 class BOT_Settings(BaseSettings):
@@ -26,7 +31,7 @@ class BOT_Settings(BaseSettings):
 class Settings(BaseSettings):
     host : str = 'localhost'
     port: int = 8000
-    logging_level: str = 'ERROR'
+    logging_level: str = 'INFO'
     origins: List[str] = ["http://localhost:5173", "http://10.177.93.85:5173"]
     DB: DB_Settings = DB_Settings()
     BOT: BOT_Settings = BOT_Settings()

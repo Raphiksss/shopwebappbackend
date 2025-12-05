@@ -1,4 +1,4 @@
-import asyncio
+import logging
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from core.models.Order import OrdersItem
@@ -6,6 +6,10 @@ from ..schemas.orders import CreateOrder
 from ..services import products,users,cart
 from ..repositories import orders
 from core.models import Order
+from core.rabbitmq import publish_instant_delivery, publish_order_notification
+from ..schemas.messages import InstantDeliveryMessage, OrderNotificationMessage
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -16,14 +20,24 @@ async def create_order(tg_id: int, session: AsyncSession):
     products_ids = []
     user = await users.get_user(tg_id, session)
     cart_products = cart.get_card(tg_id)
+    #есть ли в заказе товары которые не выдаются моментально
+    nt_i = False
+    instant_products = []  # Список товаров для мгновенной доставки
 
     #получаем айдишники товаров с редиса, названия и считаем сумму
     for key, value in cart_products["products"].items():
         res = await products.get_product(key, session)
-        print(key)
         products_ids.append(key)
         sum += res.price * value
         items[res.title] = value
+        if res.product_type == "instantly":
+            # Сохраняем товар для отправки через RabbitMQ после создания заказа
+            instant_products.append({
+                "product_title": res.title,
+                "product_data": res.product_data
+            })
+        else:
+            nt_i =  True
     #вычитаем деньги
     if user.balance >= sum:
         user.balance -= sum
@@ -45,11 +59,28 @@ async def create_order(tg_id: int, session: AsyncSession):
 
     cart.del_all_card(tg_id)
 
-    #выводим сообщения в боте
-    from bot.bot import include_order
-    # try:
-    asyncio.create_task(
-            include_order(tg_id=new_order.user, order_id=new_order.id, items=items, username = user.username, sum = new_order.sum)
+    # Публикуем сообщения в RabbitMQ для асинхронной обработки
+    # 1. Отправляем мгновенные товары через RabbitMQ
+    for product in instant_products:
+        message = InstantDeliveryMessage(
+            tg_id=tg_id,
+            product_title=product["product_title"],
+            product_data=product["product_data"],
+            order_id=new_order.id
         )
+        await publish_instant_delivery(message.model_dump())
+        logger.info(f"Published instant delivery for product '{product['product_title']}' in order {new_order.id}")
+
+    # 2. Если есть не-мгновенные товары, отправляем уведомление
+    if nt_i:
+        notification = OrderNotificationMessage(
+            tg_id=new_order.user,
+            username=user.username,
+            order_id=new_order.id,
+            items=items,
+            sum=new_order.sum
+        )
+        await publish_order_notification(notification.model_dump())
+        logger.info(f"Published order notification for order {new_order.id}")
 
     return new_order

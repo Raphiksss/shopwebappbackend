@@ -4,6 +4,7 @@ from pydantic import BaseModel,ConfigDict
 
 
 class ProductCreate(BaseModel):
+    product_type: str
     title: str
     description: str
     price: int
@@ -19,6 +20,8 @@ class ProductRead(BaseModel):
     category_title: str | None
     rating: float
     image: str
+    product_type: str
+    product_data: str | None
     model_config = ConfigDict(from_attributes=True)
 
 class ProductReturn(BaseModel):

@@ -1,12 +1,13 @@
 import asyncio
 import logging
-import threading
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 import uvicorn
 from bot.bot import bt, dp
+from bot.consumers import start_consumers, stop_consumers
 from core import settings
 from core import configure_logging
+from core.rabbitmq import broker
 from fastapi.middleware.cors import CORSMiddleware
 from api_v1 import router as v1_router
 
@@ -16,19 +17,43 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    def _start():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(
-            dp.start_polling(
-                bt,
-                skip_updates=True,
-                handle_signals=False
-            )
-        )
-    t = threading.Thread(target=_start, daemon=True)
-    t.start()
+    # Запускаем RabbitMQ broker для API (producer)
+    await broker.start()
+    logger.info("RabbitMQ broker started")
+
+    # Запускаем RabbitMQ consumers (обработчики очередей)
+    await start_consumers()
+    logger.info("RabbitMQ consumers started")
+
+    # Запускаем Telegram bot как asyncio Task
+    bot_task = asyncio.create_task(
+        dp.start_polling(bt, skip_updates=True)
+    )
+    logger.info("Telegram bot started as asyncio task")
+
     yield
+
+    # Graceful shutdown всех сервисов
+    logger.info("Shutting down services...")
+
+    # Останавливаем бота
+    logger.info("Shutting down Telegram bot...")
+    bot_task.cancel()
+    try:
+        await bot_task
+    except asyncio.CancelledError:
+        logger.info("Bot task cancelled successfully")
+
+    await bt.session.close()
+    logger.info("Bot session closed")
+
+    # Останавливаем RabbitMQ consumers
+    await stop_consumers()
+    logger.info("RabbitMQ consumers stopped")
+
+    # Останавливаем RabbitMQ broker
+    await broker.close()
+    logger.info("RabbitMQ broker stopped")
 
 
 app = FastAPI(lifespan = lifespan)

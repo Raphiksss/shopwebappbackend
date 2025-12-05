@@ -11,6 +11,7 @@ services:
     depends_on:
       - redis
       - minio
+      - rabbitmq
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -18,6 +19,10 @@ services:
       MINIO_PORT: "9000"
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: secret123
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: admin
+      RABBITMQ_PASSWORD: admin123
 
   redis:
     image: redis:latest
@@ -42,7 +47,21 @@ services:
       - ./init.sh:/usr/bin/init.sh:ro
     entrypoint: ["/usr/bin/init.sh"]
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: shopyaebal_rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"      # AMQP порт
+      - "15672:15672"    # Web UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
 volumes:
   redis-data:
   minio-data:
+  rabbitmq-data:
 

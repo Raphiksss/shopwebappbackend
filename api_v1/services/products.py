@@ -6,14 +6,16 @@ from ..repositories import products as prod_repo
 from ..schemas.products import ProductCreate, ProductRead
 from .dependencies import get_product_dp
 
-async def create_product(data:ProductCreate,image_url:str,session:AsyncSession) -> ProductRead:
+async def create_product(data:ProductCreate,image_url:str, data_url:str, session:AsyncSession) -> ProductRead:
     new_product = Product(
         title = data.title,
         description = data.description,
         price = data.price,
         rating = data.rating,
         category_title = data.category,
-        image = image_url
+        image = image_url,
+        product_type = data.product_type,
+        product_data = data_url
     )
     created = await prod_repo.create_product(session,new_product)
     return ProductRead.model_validate(created)

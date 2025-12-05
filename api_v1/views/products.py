@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, UploadFile
+import os
+from typing import Optional
+
+from fastapi import APIRouter, Depends, UploadFile, status, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.db_helper import get_session
 from ..schemas.products import ProductRead,ProductCreate
@@ -6,16 +9,22 @@ from ..schemas import general
 from ..services.dependencies import text_data, upload_foto
 from core import s3_client
 from ..services import products_services
-from fastapi import status
 
 
 router = APIRouter(tags = ["Products"])
 
 
 @router.post("/", response_model=ProductRead, summary = "Create a new product",status_code = status.HTTP_201_CREATED)
-async def create_product(data:ProductCreate = Depends(text_data), img: UploadFile = Depends(upload_foto), session:AsyncSession = Depends(get_session)):
+async def create_product(text_data:ProductCreate = Depends(text_data), img: UploadFile = Depends(upload_foto), data: Optional[UploadFile] = None, session:AsyncSession = Depends(get_session)):
     image_url = await s3_client.upload_file(img)
-    return await products_services.create_product(data, image_url, session)
+    file_location = None
+    if data:
+        file_location = os.path.join("files",data.filename)
+        with open(file_location, "wb") as f:
+            content = await data.read()
+            f.write(content)
+
+    return await products_services.create_product(text_data, image_url, file_location, session)
 
 @router.get("/", response_model = list[ProductRead], summary = "Get products", status_code = status.HTTP_200_OK)
 async def get_products(session: AsyncSession = Depends(get_session)):
