@@ -9,11 +9,14 @@ services:
     env_file:
       - .env
     ports:
-      - "8000:8000"        # внешне 8000 → внутрь контейнера 8000
+      - "8000:8000"
     depends_on:
-      - redis
-      - minio
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -25,14 +28,14 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: admin
       RABBITMQ_PASSWORD: admin123
+    restart: on-failure
 
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/data   # чтобы данные сохранялись между перезапусками
-
+      - redis-data:/data
 
   minio:
     image: minio/minio:RELEASE.2025-06-13T11-33-47Z
@@ -54,16 +57,21 @@ services:
     container_name: shopyaebal_rabbitmq
     restart: unless-stopped
     ports:
-      - "5672:5672"      # AMQP порт
-      - "15672:15672"    # Web UI
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin123
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   redis-data:
   minio-data:
   rabbitmq-data:
-

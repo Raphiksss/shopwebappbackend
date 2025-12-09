@@ -115,7 +115,10 @@ async def give_a_product(tg_id:int, product_title:str, product_data:str):
     bot = Bot(token=API_TOKEN)
     text =f"Товар: {product_title}. Выдача автомотическая"
 
-    file_path = os.path.join(current_dir, "..", "files",  product_data)
+    product_data = product_data.replace("\\", "/")
+    file_path = os.path.join(current_dir, "..", product_data)
+    file_path = os.path.normpath(file_path)
+
     document = FSInputFile(file_path)
     await bot.send_document(chat_id=tg_id, document=document, caption=text)
     await bot.session.close()
