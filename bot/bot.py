@@ -14,7 +14,7 @@ import requests
 
 API_TOKEN = settings.BOT.bot_token
 ADMIN_TG_ID = settings.BOT.admin_tg_id
-CRYPTO_BOT_TOKEN = "341247:AAbEHSq8RtooEzgsTmO9F3y2KLb8ikmoSqv"
+CRYPTO_BOT_TOKEN = settings.BOT.crypto_bot_token
 
 #настроить конфиги для токена и курсов
 #разнести по файлам а то душно уже
@@ -34,7 +34,7 @@ async def stars_buying(tg_id: int,amount:int):
         description=f"Пополнение баланса на {amount} рублей.",
         payload=f"order_{tg_id}_{amount}",
         currency="XTR",
-        prices=[LabeledPrice(label="Цена", amount=int(amount* 1.8))],
+        prices=[LabeledPrice(label="Цена", amount=int(amount* settings.BOT.stars_exchange_rate))],
 
         # reply_markup=payment_keyboard()
     )

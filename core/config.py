@@ -25,6 +25,8 @@ class DB_Settings(BaseSettings):
 class BOT_Settings(BaseSettings):
     bot_token: str = Field(alias = 'BOT_TOKEN')
     admin_tg_id: str = Field(alias = 'ADMIN_TG_ID')
+    crypto_bot_token: str = Field(alias = 'CRYPTO_BOT_TOKEN')
+    stars_exchange_rate:float = 1.5
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra='ignore')
 
