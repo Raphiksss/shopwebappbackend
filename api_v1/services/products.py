@@ -7,6 +7,7 @@ from ..schemas.products import ProductCreate, ProductRead
 from .dependencies import get_product_dp
 
 async def create_product(data:ProductCreate,image_url:str, data_url:str, session:AsyncSession) -> ProductRead:
+
     new_product = Product(
         title = data.title,
         description = data.description,
