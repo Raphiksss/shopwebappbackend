@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     port: int = 8000
     logging_level: str = 'INFO'
     origins: List[str] = ["http://localhost:5173", "http://10.177.93.85:5173"]
+    YOOMONEY_TOKEN:str = Field(alias = 'YOOMONEY_TOKEN')
+    YOOMONEY_WALLET:str = Field(alias = 'YOOMONEY_WALLET')
+    YOOMONEY_NOTIFICATION_SECRET:str = Field(alias = 'YOOMONEY_NOTIFICATION_SECRET')
     DB: DB_Settings = DB_Settings()
     BOT: BOT_Settings = BOT_Settings()
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra='ignore')

@@ -6,7 +6,7 @@ authors = [
     {name = "Raphiksss",email = "bibi.tara.leon@gmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.10, <=3.13.2"
+requires-python = ">=3.12, <=3.13.2"
 dependencies = [
     "fastapi[all] (>=0.115.12,<0.116.0)",
     "sqlalchemy (>=2.0.41,<3.0.0)",
@@ -16,7 +16,9 @@ dependencies = [
     "redis (>=6.2.0,<7.0.0)",
     "aiobotocore (>=2.23.0,<3.0.0)",
     "faststream[rabbit] (>=0.6.3,<0.7.0)",
-    "requests (>=2.32.5,<3.0.0)"
+    "requests (>=2.32.5,<3.0.0)",
+    "aioyoomoney-api (>=0.0.10,<0.0.11)",
+    "yoomoney (>=0.1.2,<0.2.0)"
 ]
 
 
