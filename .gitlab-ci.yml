@@ -1,0 +1,54 @@
+image: docker:latest
+
+services:
+  - docker:bind
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  IMAGE_NAME: $CI_REGISTRY/$CI_PROJECT_PATH:$CI_COMMIT_SHORT_SHA
+  IMAGE_LATEST: $CI_REGISTRY/$CI_PROJECT_PATH:latest
+
+stages:
+  - build
+  - test
+  - deploy
+
+
+before_script:
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+
+build:
+  stage: build
+  script:
+    - docker-compose build
+    - docker-compose push
+  only:
+    - main
+    - develop
+
+# Деплой на dev сервер
+deploy_dev:
+  stage: deploy
+  script:
+    - docker-compose down
+    - docker-compose pull
+    - docker-compose up -d
+  only:
+    - develop
+  environment:
+    name: development
+
+# Деплой на production (с подтверждением)
+deploy_production:
+  stage: deploy
+  script:
+    - docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+    - docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
+    - docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+  only:
+    - main
+  when: manual
+  environment:
+    name: production
