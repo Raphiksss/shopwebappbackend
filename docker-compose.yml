@@ -50,7 +50,7 @@ services:
       - "9001:9001"
     volumes:
       - minio-data:/data
-      - ./init.sh:/usr/bin/init.sh:ro
+      - ./init.sh:/usr/bin/init.sh
     entrypoint: ["/usr/bin/init.sh"]
 
   rabbitmq:
