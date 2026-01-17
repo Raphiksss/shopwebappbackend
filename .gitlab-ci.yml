@@ -43,6 +43,17 @@ deploy_dev:
 # Деплой на production (с подтверждением)
 deploy_production:
   stage: deploy
+  before_script:
+    - |
+      cat > .env << EOF
+      BOT_TOKEN=$BOT_TOKEN
+      ADMIN_TG_ID=$ADMIN_TG_ID
+      CRYPTO_BOT_TOKEN=$CRYPTO_BOT_TOKEN
+      YOOMONEY_TOKEN=$YOOMONEY_TOKEN
+      YOOMONEY_WALLET=$YOOMONEY_WALLET
+      YOOMONEY_NOTIFICATION_SECRET=$YOOMONEY_NOTIFICATION_SECRET
+      DEBUG=false
+      EOF
   script:
     - docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
     - docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
