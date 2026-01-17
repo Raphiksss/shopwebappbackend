@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     host : str = 'localhost'
     port: int = 8000
     logging_level: str = 'INFO'
-    origins: List[str] = ["http://localhost:5173", "http://10.177.93.85:5173"]
+    origins: List[str] = ["http://localhost:5173", "http://10.177.93.85:5173", "https://redstoreapp.com"]
     YOOMONEY_TOKEN:str = Field(alias = 'YOOMONEY_TOKEN')
     YOOMONEY_WALLET:str = Field(alias = 'YOOMONEY_WALLET')
     YOOMONEY_NOTIFICATION_SECRET:str = Field(alias = 'YOOMONEY_NOTIFICATION_SECRET')
