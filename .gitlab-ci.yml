@@ -6,12 +6,14 @@ services:
 variables:
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS_VERIFY: 1
+  DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
   IMAGE_NAME: $CI_REGISTRY/$CI_PROJECT_PATH:$CI_COMMIT_SHORT_SHA
   IMAGE_LATEST: $CI_REGISTRY/$CI_PROJECT_PATH:latest
 
-
-
 before_script:
+  - apk add --no-cache docker-compose
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 
 stages:
@@ -20,6 +22,8 @@ stages:
 deploy:
   stage: deploy
   before_script:
+    - apk add --no-cache docker-compose
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - |
       cat > .env << EOF
       BOT_TOKEN=$BOT_TOKEN
@@ -30,8 +34,8 @@ deploy:
       YOOMONEY_NOTIFICATION_SECRET=$YOOMONEY_NOTIFICATION_SECRET
       DEBUG=false
       EOF
-      - chmod +x init.sh
-      - chmod +x *.sh 2>/dev/null || true
+    - chmod +x init.sh
+    - chmod +x *.sh 2>/dev/null || true
   script:
     - docker-compose down || true
     - docker-compose up -d --build
