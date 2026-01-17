@@ -1,7 +1,6 @@
 stages:
   - deploy
 
-
 deploy:
   stage: deploy
   before_script:
@@ -25,10 +24,10 @@ deploy:
     - chmod +x *.sh 2>/dev/null || true
 
     # Останавливаем старые контейнеры
-    - docker compose down || true
+    - sudo docker compose down || true
 
     # Запускаем новые контейнеры
-    - docker compose up -d --build
+    - sudo docker compose up -d --build
   only:
     - main
   when: manual
