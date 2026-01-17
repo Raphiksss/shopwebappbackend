@@ -24,10 +24,10 @@ deploy:
     - chmod +x *.sh 2>/dev/null || true
 
     # Останавливаем старые контейнеры
-    - sudo docker compose down || true
+    - docker compose down || true
 
     # Запускаем новые контейнеры
-    - sudo docker compose up -d --build
+    - docker compose up -d --build
   only:
     - main
   when: manual
