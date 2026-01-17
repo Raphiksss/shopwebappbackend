@@ -30,6 +30,8 @@ deploy:
       YOOMONEY_NOTIFICATION_SECRET=$YOOMONEY_NOTIFICATION_SECRET
       DEBUG=false
       EOF
+      - chmod +x init.sh
+      - chmod +x *.sh 2>/dev/null || true
   script:
     - docker-compose down || true
     - docker-compose up -d --build
