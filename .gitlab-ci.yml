@@ -27,6 +27,7 @@ build:
     - main
     - develop
 
+
 # Деплой на dev сервер
 deploy_dev:
   stage: deploy
