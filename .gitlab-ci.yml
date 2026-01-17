@@ -20,6 +20,7 @@ deploy:
       YOOMONEY_NOTIFICATION_SECRET=$YOOMONEY_NOTIFICATION_SECRET
       DEBUG=false
       EOF
+      
 
     # Даем права на скрипты
     - chmod +x init.sh
@@ -29,7 +30,7 @@ deploy:
     - docker compose down || true
 
     # Запускаем новые контейнеры
-    - docker compose up -d --build
+    - docker compose up -d --build --force-recreate
   only:
     - main
   when: manual
