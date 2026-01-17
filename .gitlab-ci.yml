@@ -3,8 +3,6 @@ stages:
 
 deploy:
   stage: deploy
-  tags:
-    - shell
   script:
     # Создаем .env файл
     - |
