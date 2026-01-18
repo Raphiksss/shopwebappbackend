@@ -38,11 +38,11 @@ async def replenishment_balance(tg_id: int, amount: int):
 async def replenishment_balance_cr(tg_id: int, amount: int):
     return await users_services.replenishment_balance_crypto_bot(tg_id, amount)
 
-@router.post("/replenisment/yoomoney", summary = "Создания счета на оплату Юмани" ,status_code = status.HTTP_200_OK)
+@router.post("/replenisment/yoomoney/", summary = "Создания счета на оплату Юмани" ,status_code = status.HTTP_200_OK)
 async def replenishment_balance_yoomoney(tg_id: int, amount: int):
     return await create_invoice(tg_id, amount)
 
-@router.post("/webhook/yoomoney", summary="Webhook от YooMoney", status_code=status.HTTP_200_OK)
+@router.post("/webhook/yoomoney/", summary="Webhook от YooMoney", status_code=status.HTTP_200_OK)
 async def yoomoney_webhook(
     notification_type: str = Form(...),
     operation_id: str = Form(...),
