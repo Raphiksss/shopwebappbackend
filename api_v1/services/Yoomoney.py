@@ -17,7 +17,7 @@ async def create_invoice(tg_id:int, amount:int):
         sum=amount,
         label=label
     )
-    payment_url = quickpay.redirected_url
+    payment_url = quickpay.base_url
     return {
         "payment_url": payment_url,
         "label": label
