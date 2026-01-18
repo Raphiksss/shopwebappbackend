@@ -68,9 +68,16 @@ async def yoomoney_webhook(
         "sha1_hash": sha1_hash
     }
 
+    # Логирование для отладки
+    print(f"[YooMoney Webhook] Received: {payload}")
+    print(f"[YooMoney Webhook] Secret length: {len(settings.YOOMONEY_NOTIFICATION_SECRET)}")
+
     # 2. Проверка подписи
     if not verify_webhook_signature(payload, settings.YOOMONEY_NOTIFICATION_SECRET):
+        print(f"[YooMoney Webhook] Signature verification FAILED")
         raise HTTPException(status_code=403, detail="Invalid signature")
+
+    print(f"[YooMoney Webhook] Signature verification OK")
 
     # 3. Валидация amount
     if amount <= 0:
