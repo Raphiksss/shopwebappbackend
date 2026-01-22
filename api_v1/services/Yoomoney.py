@@ -32,9 +32,15 @@ def verify_webhook_signature(payload: dict, notification_secret: str) -> bool:
         f"{payload['currency']}&"
         f"{payload['datetime']}&"
         f"{payload['sender']}&"
-        f"{str(payload['codepro']).lower()}&"
+        f"{payload['codepro']}&"
         f"{notification_secret}&"
         f"{payload['label']}"
     )
     computed_hash = hashlib.sha1(signature_string.encode('utf-8')).hexdigest()
+
+    # Отладка
+    print(f"[Signature] String: {signature_string}")
+    print(f"[Signature] Computed: {computed_hash}")
+    print(f"[Signature] Received: {payload['sha1_hash']}")
+
     return computed_hash == payload['sha1_hash']

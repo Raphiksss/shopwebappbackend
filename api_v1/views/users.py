@@ -46,20 +46,20 @@ async def replenishment_balance_yoomoney(tg_id: int, amount: int):
 async def yoomoney_webhook(
     notification_type: str = Form(...),
     operation_id: str = Form(...),
-    amount: float = Form(...),
+    amount: str = Form(...),
     currency: str = Form(...),
     datetime: str = Form(...),
     sender: str = Form(""),
-    codepro: bool = Form(...),
+    codepro: str = Form(...),
     label: str = Form(...),
     sha1_hash: str = Form(...),
     session: AsyncSession = Depends(get_session)
 ):
-    # 1. Формируем payload
+    # 1. Формируем payload (все значения как строки - как их отправляет YooMoney)
     payload = {
         "notification_type": notification_type,
         "operation_id": operation_id,
-        "amount": str(amount),
+        "amount": amount,
         "currency": currency,
         "datetime": datetime,
         "sender": sender,
@@ -80,7 +80,8 @@ async def yoomoney_webhook(
     print(f"[YooMoney Webhook] Signature verification OK")
 
     # 3. Валидация amount
-    if amount <= 0:
+    amount_float = float(amount)
+    if amount_float <= 0:
         raise HTTPException(status_code=400, detail="Invalid amount")
 
     # 4. Защита от дублирования через Redis
@@ -110,7 +111,7 @@ async def yoomoney_webhook(
 
         # 6. Обновление баланса
         try:
-            await users_repository.add_balance(tg_id, int(amount), session)
+            await users_repository.add_balance(tg_id, int(float(amount)), session)
         except Exception as e:
             await redis_client.delete(key)
             await redis_client.close()
