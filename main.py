@@ -59,7 +59,7 @@ app = FastAPI(lifespan = lifespan)
 
 app.include_router(v1_router)
 app.add_middleware(CORSMiddleware,allow_origins=settings.origins,allow_credentials=False,allow_methods=["*"],allow_headers=["*"],)
-app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET_KEY,max_age = settings.SESSION_EXPIRE_TIME)
+app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_SESSION_KEY,max_age = settings.SESSION_EXPIRE_TIME)
 
 @app.get('/')
 async def hello():
