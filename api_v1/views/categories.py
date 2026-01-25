@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, UploadFile, Form
+from fastapi import APIRouter, Depends, UploadFile, Form, HTTPException
 from starlette import status
 from ..schemas.categories import CategoryRead
 from ..services.dependencies import upload_foto
-from ..services import categories as categories_services
+from ..services import categories as categories_services, auth
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.db_helper import get_session
 from core import s3_client
@@ -10,7 +10,9 @@ from core import s3_client
 router = APIRouter(tags = ["Categories"])
 
 @router.post("/", summary = "Create a new category", status_code = status.HTTP_201_CREATED, response_model = CategoryRead)
-async def create_category(category_title:str = Form(...,description= "Название категории"), img:UploadFile = Depends(upload_foto), session: AsyncSession = Depends(get_session)):
+async def create_category(category_title:str = Form(...,description= "Название категории"), img:UploadFile = Depends(upload_foto), session: AsyncSession = Depends(get_session), chk:bool = Depends(auth.check_if_auth)):
+    if not chk:
+        raise HTTPException(status_code=401,detail="Not authenticated")
     image_url = await s3_client.upload_file(img)
     return await categories_services.create_category(category_title, image_url, session)
 

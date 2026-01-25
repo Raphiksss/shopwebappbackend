@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     YOOMONEY_TOKEN:str = Field(alias = 'YOOMONEY_TOKEN')
     YOOMONEY_WALLET:str = Field(alias = 'YOOMONEY_WALLET')
     YOOMONEY_NOTIFICATION_SECRET:str = Field(alias = 'YOOMONEY_NOTIFICATION_SECRET')
+    SESSION_SECRET_KEY:str = Field(alias = 'SECRET_SESSION_KEY')
+    SESSION_EXPIRE_TIME:int = 24 * 60 * 60
     DB: DB_Settings = DB_Settings()
     BOT: BOT_Settings = BOT_Settings()
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra='ignore')

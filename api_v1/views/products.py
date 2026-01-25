@@ -8,14 +8,15 @@ from ..schemas.products import ProductRead,ProductCreate
 from ..schemas import general
 from ..services.dependencies import text_data, upload_foto
 from core import s3_client
-from ..services import products_services
-
+from ..services import products_services, auth
 
 router = APIRouter(tags = ["Products"])
 
 
 @router.post("/", response_model=ProductRead, summary = "Create a new product",status_code = status.HTTP_201_CREATED)
-async def create_product(text_data:ProductCreate = Depends(text_data), img: UploadFile = Depends(upload_foto), data: Optional[UploadFile] = None, session:AsyncSession = Depends(get_session)):
+async def create_product(text_data:ProductCreate = Depends(text_data), img: UploadFile = Depends(upload_foto), data: Optional[UploadFile] = None, session:AsyncSession = Depends(get_session),chk:bool = Depends(auth.check_if_auth)):
+    if not chk:
+        raise HTTPException(status_code=401,detail="Not authenticated")
     image_url = await s3_client.upload_file(img)
     file_location = None
     if data:
@@ -44,6 +45,8 @@ async def get_product(product_id: int, session: AsyncSession = Depends(get_sessi
             responses={
             404: {
                 "model": general.ErrorResponse,
-                "description": "Товар отсутвует"}})
-async def delete_products(product_id:int, session: AsyncSession = Depends(get_session)):
+                "description": "Товар отсутвует"}}, )
+async def delete_products(product_id:int, session: AsyncSession = Depends(get_session), chk:bool = Depends(auth.check_if_auth)):
+    if not chk:
+        raise HTTPException(status_code=401,detail="Not authenticated")
     return await products_services.delete_product(product_id, session)

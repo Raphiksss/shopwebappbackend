@@ -4,7 +4,6 @@ from pydantic import BaseModel, ConfigDict
 class UserCreate(BaseModel):
     username: str
     tg_id: int
-    balance: int
 
 class UserRead(BaseModel):
     username: str
