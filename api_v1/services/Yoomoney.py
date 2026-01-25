@@ -2,6 +2,7 @@ import time
 import hashlib
 from yoomoney import Quickpay
 from core import settings
+from core.common import logger
 
 YOOMONEY_TOKEN = settings.YOOMONEY_TOKEN
 YOOMONEY_WALLET = settings.YOOMONEY_WALLET
@@ -38,9 +39,9 @@ def verify_webhook_signature(payload: dict, notification_secret: str) -> bool:
     )
     computed_hash = hashlib.sha1(signature_string.encode('utf-8')).hexdigest()
 
-    # Отладка
-    print(f"[Signature] String: {signature_string}")
-    print(f"[Signature] Computed: {computed_hash}")
-    print(f"[Signature] Received: {payload['sha1_hash']}")
+
+    logger.debug(f"[Signature] String: {signature_string}",)
+    logger.debug(f"[Signature] Computed: {computed_hash}")
+    logger.debug(f"[Signature] Received: {payload['sha1_hash']}")
 
     return computed_hash == payload['sha1_hash']

@@ -6,14 +6,13 @@ import uvicorn
 from bot.bot import bt, dp
 from bot.consumers import start_consumers, stop_consumers
 from core import settings
-from core import configure_logging
+from core import logger
 from core.rabbitmq import broker
 from fastapi.middleware.cors import CORSMiddleware
 from api_v1 import router as v1_router
+from starlette.middleware.sessions import SessionMiddleware
 
 
-
-logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -60,13 +59,12 @@ app = FastAPI(lifespan = lifespan)
 
 app.include_router(v1_router)
 app.add_middleware(CORSMiddleware,allow_origins=settings.origins,allow_credentials=False,allow_methods=["*"],allow_headers=["*"],)
-
+app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET_KEY)
 
 @app.get('/')
 async def hello():
     return 'Hello'
 
 if __name__ == '__main__':
-    configure_logging()
     uvicorn.run(app, host = settings.host, port = settings.port)
 
