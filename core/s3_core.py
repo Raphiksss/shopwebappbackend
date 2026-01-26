@@ -51,7 +51,7 @@ class S3Client:
                 ContentType=ctype,
                 ContentDisposition="inline"
             )
-        return f"{settings.DB_Settings.images_uri}/{self.bucket_name}/{object_name}"
+        return f"{settings.DB.images_uri}/{self.bucket_name}/{object_name}"
 
 s3 = S3Client(
         access_key   = MINIO_ROOT_USER,
