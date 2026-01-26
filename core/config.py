@@ -11,6 +11,7 @@ class DB_Settings(BaseSettings):
     MINIO_ROOT_PASSWORD:str  = Field('secret123',  validation_alias = 'MINIO_ROOT_PASSWORD')
     MINIO_HOST:str  = Field('localhost',  validation_alias = 'MINIO_HOST' )
     MINIO_PORT:int  = Field(9000,  validation_alias = 'MINIO_PORT' )
+    images_uri:str = 'https://minio.redstoreapp.com'
 
     REDIS_HOST: str = Field('localhost', validation_alias = 'REDIS_HOST')
     REDIS_PORT:int = Field(6379, validation_alias = 'REDIS_PORT' )
