@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.models import Category
 
@@ -13,4 +13,10 @@ async def get_categories(session: AsyncSession) -> list[Category]:
     products = await session.execute(stmt)
     result = products.scalars().all()
     return result
+
+async def delete_category(category_id:int, session: AsyncSession) -> None:
+    stmt = delete(Category).where(Category.id == category_id)
+    await session.execute(stmt)
+    return None
+
 
