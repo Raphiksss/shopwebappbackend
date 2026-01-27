@@ -17,6 +17,7 @@ async def get_categories(session: AsyncSession) -> list[Category]:
 async def delete_category(category_id:int, session: AsyncSession) -> None:
     stmt = delete(Category).where(Category.id == category_id)
     await session.execute(stmt)
+    await session.commit()
     return None
 
 
