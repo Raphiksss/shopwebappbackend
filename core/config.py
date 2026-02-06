@@ -36,12 +36,12 @@ class Settings(BaseSettings):
     port: int = 8000
     logging_level: str = 'INFO'
     origins: List[str] = ["http://localhost:5173", "http://10.177.93.85:5173", "https://redstoreapp.com"]
-    ADMIN_USERNAME:SecretStr = SecretStr('')
-    ADMIN_PASSWORD:SecretStr = SecretStr('')
+    ADMIN_USERNAME:str = Field(alias = 'ADMIN_USERNAME')
+    ADMIN_PASSWORD:str = Field(alias = 'ADMIN_PASSWORD')
     YOOMONEY_TOKEN:str = Field(alias = 'YOOMONEY_TOKEN')
     YOOMONEY_WALLET:str = Field(alias = 'YOOMONEY_WALLET')
     YOOMONEY_NOTIFICATION_SECRET:str = Field(alias = 'YOOMONEY_NOTIFICATION_SECRET')
-    SECRET_SESSION_KEY:SecretStr = SecretStr('')
+    SECRET_SESSION_KEY:SecretStr = Field(alias = 'SECRET_SESSION_KEY')
     SESSION_EXPIRE_TIME:int = 24 * 60 * 60
     DB: DB_Settings = DB_Settings()
     BOT: BOT_Settings = BOT_Settings()
