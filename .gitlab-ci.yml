@@ -23,7 +23,7 @@ deploy:
       
 
     # Даем права на скрипты
-    - chmod +x init.sh
+    - chmod +x init_minio.sh
     - chmod +x *.sh 2>/dev/null || true
 
     # Останавливаем старые контейнеры

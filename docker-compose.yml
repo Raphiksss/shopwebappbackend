@@ -16,8 +16,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-      minio:
+      postgresql:
         condition: service_started
+      minio:
+        condition: service_healthy
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -40,6 +42,7 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2025-06-13T11-33-47Z
+    command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: secret123
@@ -50,8 +53,12 @@ services:
       - "9001:9001"
     volumes:
       - minio-data:/data
-      - ./init.sh:/usr/bin/init.sh
-    entrypoint: ["/usr/bin/init.sh"]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
@@ -72,7 +79,22 @@ services:
       retries: 5
       start_period: 30s
 
+  postgresql:
+    image: postgres:alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: password123
+    volumes:
+      - "postgresql-data:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   redis-data:
   minio-data:
   rabbitmq-data:
+  postgresql-data:

@@ -2,8 +2,9 @@ from core.models import Admin
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import Request, HTTPException
+from pydantic import SecretStr
 
-async def create_admin(username:str,password:str, session: AsyncSession):
+async def create_admin(username:str|SecretStr,password:str|SecretStr, session: AsyncSession):
     new_admin = Admin(username=username, password = password)
     session.add(new_admin)
     await session.commit()

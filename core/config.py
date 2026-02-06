@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DB_Settings(BaseSettings):
-    db_url: str = 'sqlite+aiosqlite:///./db.sqlite3'
+    db_url: str = 'postgresql+asyncpg://postgres:password123@postgresql:5432/postgres'
 
     MINIO_ROOT_USER:str  = Field('admin',  validation_alias = 'MINIO_ROOT_USER')
     MINIO_ROOT_PASSWORD:str  = Field('secret123',  validation_alias = 'MINIO_ROOT_PASSWORD')
@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     port: int = 8000
     logging_level: str = 'INFO'
     origins: List[str] = ["http://localhost:5173", "http://10.177.93.85:5173", "https://redstoreapp.com"]
+    ADMIN_USERNAME:SecretStr = SecretStr('')
+    ADMIN_PASSWORD:SecretStr = SecretStr('')
     YOOMONEY_TOKEN:str = Field(alias = 'YOOMONEY_TOKEN')
     YOOMONEY_WALLET:str = Field(alias = 'YOOMONEY_WALLET')
     YOOMONEY_NOTIFICATION_SECRET:str = Field(alias = 'YOOMONEY_NOTIFICATION_SECRET')
