@@ -23,7 +23,8 @@ deploy:
       
 
     # Даем права на скрипты
-    - chmod +x init_minio.sh
+    - chmod +x backend/scripts/entrypoint.sh
+    - chmod +x backend/scripts/init_minio.sh
     - chmod +x *.sh 2>/dev/null || true
 
     # Останавливаем старые контейнеры
