@@ -1,10 +1,12 @@
-
 from pydantic import TypeAdapter
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.models import Product
 from ..repositories import products as prod_repo
 from ..schemas.products import ProductCreate, ProductRead
 from .dependencies import get_product_dp
+from fastapi import HTTPException
+
 
 async def create_product(data:ProductCreate,image_url:str, data_url:str, session:AsyncSession) -> ProductRead:
 
@@ -18,7 +20,11 @@ async def create_product(data:ProductCreate,image_url:str, data_url:str, session
         product_type = data.product_type,
         product_data = data_url
     )
-    created = await prod_repo.create_product(session,new_product)
+    try:
+        created = await prod_repo.create_product(session,new_product)
+    except IntegrityError:
+        raise HTTPException(status_code=404, detail="Referenced resource not found")
+
     return ProductRead.model_validate(created)
 
 async def get_products(session:AsyncSession) -> list[ProductRead]:
