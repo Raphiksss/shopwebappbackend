@@ -9,7 +9,7 @@ from api_v1.schemas.users import UserCreate
 from core.db_helper import get_session
 from core import settings
 from core.models import User
-from aiogram.types import FSInputFile, LabeledPrice, PreCheckoutQuery
+from aiogram.types import FSInputFile, LabeledPrice, PreCheckoutQuery,InlineKeyboardButton
 import requests
 
 API_TOKEN = settings.BOT.bot_token
@@ -157,6 +157,13 @@ async def cmd_start(message: types.Message):
             break
         break
 
+@dp.message(Command(commands=["admin_panel"]))
+async def admin_panel(message: types.Message):
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Панель администратора", url=f"https://redstoreapp.com/admin")]])
+    if message.from_user.id == ADMIN_TG_ID:
+        await bt.send_message(chat_id=ADMIN_TG_ID, text="✅",reply_markup=keyboard)
+    else:
+        await message.answer("❌")
 
 @dp.message(Command(commands=["testbalancefunc"]))
 async def cmd_replenishment(message: types.Message):
