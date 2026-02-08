@@ -17,17 +17,16 @@ from api_v1.services import auth
 
 async def check_db_empty():
     """Check if database has no tables."""
-    for attempt in range(5):
-        async with engine.connect() as conn:
-            result = await conn.execute(text(
-                "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'"
-            ))
-            count = result.scalar()
-            print(f"Table count check (attempt {attempt + 1}): {count}")
-            if count > 0:
-                return False
-        await asyncio.sleep(3)
-    return True
+    print(f"DB URL: {settings.DB.db_url}")
+    async with engine.connect() as conn:
+        db = await conn.execute(text("SELECT current_database()"))
+        print(f"Connected to database: {db.scalar()}")
+        tables = await conn.execute(text(
+            "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+        ))
+        table_list = [row[0] for row in tables]
+        print(f"Tables found: {table_list}")
+        return len(table_list) == 0
 
 
 async def create_tables():
