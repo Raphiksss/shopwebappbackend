@@ -13,11 +13,11 @@ async def create_admin(username:str, password:str,session:AsyncSession = Depends
     res = await auth.create_admin(username,password,session)
     return res
 
-@router.get("/login/", summary = "залогиниться")
-async def admin_auth(request: Request, username:str, password:str,session:AsyncSession = Depends(get_session)):
-    admin = await auth.check_admin(username, password, session)
+@router.post("/login/", summary = "залогиниться")
+async def admin_auth(request: Request, login_data:auth.Login,session:AsyncSession = Depends(get_session)):
+    admin = await auth.check_admin(login_data.username, login_data.password, session)
     if not admin:
-        raise HTTPException(status_code=401,detail = "Invalid Credentials")
+        raise HTTPException(status_code=403,detail = "Invalid Credentials")
     request.session["admin_id"] = admin.id
     return {"status": "ok", "message": "Logged in successfully"}
 

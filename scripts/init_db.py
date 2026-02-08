@@ -13,6 +13,7 @@ from core.db_helper import engine, AsyncSessionLocal
 from core.models.Base import Base
 from core.models.Admin import Admin
 from core.config import settings
+from api_v1.services import auth
 
 async def check_db_empty():
     """Check if database has no tables."""
@@ -42,9 +43,7 @@ async def create_initial_admin():
             username = str(settings.ADMIN_USERNAME)
             password = str(settings.ADMIN_PASSWORD)
             logger.debug(f"username:{username}, password:{password}")
-            new_admin = Admin(username=username, password=password)
-            session.add(new_admin)
-            await session.commit()
+            await auth.create_admin(username,password,session)
             print(f"Created initial admin: {username}")
         else:
             print("Admin already exists, skipping creation")
