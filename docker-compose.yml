@@ -85,6 +85,7 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: password123
+      PGDATA: /var/lib/postgresql/data
     volumes:
       - "postgresql-data:/var/lib/postgresql/data"
     healthcheck:
