@@ -160,6 +160,7 @@ async def cmd_start(message: types.Message):
 @dp.message(Command(commands=["admin_panel"]))
 async def admin_panel(message: types.Message):
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Панель администратора", url=f"https://redstoreapp.com/admin")]])
+    print(message.from_user.id,ADMIN_TG_ID)
     if message.from_user.id == ADMIN_TG_ID:
         await bt.send_message(chat_id=ADMIN_TG_ID, text="✅",reply_markup=keyboard)
     else:
