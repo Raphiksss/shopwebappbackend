@@ -48,18 +48,8 @@ class S3Client:
         object_name = f"{uuid.uuid4().hex}{ext}"
         ctype = file.content_type
 
-        if ctype in {"image/jpeg", "image/png", "image/webp"}:
-            image = Image.open(BytesIO(data))
-            image.load()
-            image = ImageOps.exif_transpose(image)
-            buffer = BytesIO()
-            fmt = {"image/jpeg": "JPEG", "image/png": "PNG", "image/webp": "WEBP"}[ctype]
-            save_kwargs = {"format": fmt}
-            if fmt == "JPEG":
-                save_kwargs["quality"] = 95
-            image.save(buffer, **save_kwargs)
-            data = buffer.getvalue()
-            print(f"[S3 UPLOAD] After Pillow: {len(data)} bytes, image size: {image.size}")
+        # Pillow отключён для диагностики
+        print(f"[S3 UPLOAD] Uploading raw file: {len(data)} bytes")
 
         async with self.get_client() as client:
             await client.put_object(
