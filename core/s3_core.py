@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
+from io import BytesIO
 from aiobotocore.session import get_session
 from botocore.config import Config
 from fastapi import HTTPException
+from PIL import Image, ImageOps
 import os
 from .config import settings
 
@@ -42,6 +44,14 @@ class S3Client:
 
         object_name = file.filename
         ctype = file.content_type
+
+        if ctype in {"image/jpeg", "image/png", "image/webp"}:
+            image = Image.open(BytesIO(data))
+            image = ImageOps.exif_transpose(image)
+            buffer = BytesIO()
+            fmt = {"image/jpeg": "JPEG", "image/png": "PNG", "image/webp": "WEBP"}[ctype]
+            image.save(buffer, format=fmt)
+            data = buffer.getvalue()
 
         async with self.get_client() as client:
             await client.put_object(
