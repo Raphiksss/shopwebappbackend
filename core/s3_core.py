@@ -40,6 +40,7 @@ class S3Client:
             except client.exceptions.BucketAlreadyOwnedByYou:
                 pass
         data = await file.read()
+        print(f"[S3 UPLOAD] Original size: {len(data)} bytes, filename: {file.filename}")
         if not data:
             raise HTTPException(status_code=400, detail="Пустой файл")
 
@@ -58,6 +59,7 @@ class S3Client:
                 save_kwargs["quality"] = 95
             image.save(buffer, **save_kwargs)
             data = buffer.getvalue()
+            print(f"[S3 UPLOAD] After Pillow: {len(data)} bytes, image size: {image.size}")
 
         async with self.get_client() as client:
             await client.put_object(
