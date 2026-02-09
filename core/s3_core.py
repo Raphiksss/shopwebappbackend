@@ -49,10 +49,14 @@ class S3Client:
 
         if ctype in {"image/jpeg", "image/png", "image/webp"}:
             image = Image.open(BytesIO(data))
+            image.load()
             image = ImageOps.exif_transpose(image)
             buffer = BytesIO()
             fmt = {"image/jpeg": "JPEG", "image/png": "PNG", "image/webp": "WEBP"}[ctype]
-            image.save(buffer, format=fmt)
+            save_kwargs = {"format": fmt}
+            if fmt == "JPEG":
+                save_kwargs["quality"] = 95
+            image.save(buffer, **save_kwargs)
             data = buffer.getvalue()
 
         async with self.get_client() as client:
