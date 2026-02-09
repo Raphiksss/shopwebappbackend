@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from io import BytesIO
+import uuid
 from aiobotocore.session import get_session
 from botocore.config import Config
 from fastapi import HTTPException
@@ -42,7 +43,8 @@ class S3Client:
         if not data:
             raise HTTPException(status_code=400, detail="Пустой файл")
 
-        object_name = file.filename
+        ext = os.path.splitext(file.filename)[1]
+        object_name = f"{uuid.uuid4().hex}{ext}"
         ctype = file.content_type
 
         if ctype in {"image/jpeg", "image/png", "image/webp"}:
