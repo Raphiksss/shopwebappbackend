@@ -59,7 +59,8 @@ class S3Client:
                 Key=object_name,
                 Body=data,
                 ContentType=ctype,
-                ContentDisposition="inline"
+                ContentDisposition="inline",
+                CacheControl="no-cache"
             )
         return f"{settings.DB.images_uri}/{self.bucket_name}/{object_name}"
 
