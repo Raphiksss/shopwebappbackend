@@ -8,24 +8,18 @@ from PIL import Image, ImageOps
 import os
 from .config import settings
 
-MINIO_ROOT_USER = settings.DB.MINIO_ROOT_USER
-MINIO_ROOT_PASSWORD = settings.DB.MINIO_ROOT_PASSWORD
-MINIO_HOST = settings.DB.MINIO_HOST
-MINIO_PORT = settings.DB.MINIO_PORT
-
 
 class S3Client:
-    def __init__(self,access_key: str,secret_key: str,endpoint: str,bucket_name: str):
+    def __init__(self, access_key: str, secret_key: str, endpoint: str, bucket_name: str, public_url: str):
         self.config = {
-            "endpoint_url":       endpoint,
-            "region_name":        "us-east-1",
-            "aws_access_key_id":     access_key,
+            "endpoint_url": endpoint,
+            "region_name": "auto",
+            "aws_access_key_id": access_key,
             "aws_secret_access_key": secret_key,
-            "use_ssl":            False,
-            "verify":             False,
-            "config":             Config(signature_version="s3v4"),
+            "config": Config(signature_version="s3v4"),
         }
         self.bucket_name = bucket_name
+        self.public_url = public_url
         self.session = get_session()
 
     @asynccontextmanager
@@ -34,13 +28,7 @@ class S3Client:
             yield client
 
     async def upload_file(self, file):
-        async with self.get_client() as client:
-            try:
-                await client.create_bucket(Bucket = self.bucket_name)
-            except client.exceptions.BucketAlreadyOwnedByYou:
-                pass
         data = await file.read()
-        print(f"[S3 UPLOAD] Original size: {len(data)} bytes, filename: {file.filename}")
         if not data:
             raise HTTPException(status_code=400, detail="Пустой файл")
 
@@ -48,8 +36,17 @@ class S3Client:
         object_name = f"{uuid.uuid4().hex}{ext}"
         ctype = file.content_type
 
-        # Pillow отключён для диагностики
-        print(f"[S3 UPLOAD] Uploading raw file: {len(data)} bytes")
+        if ctype in {"image/jpeg", "image/png", "image/webp"}:
+            image = Image.open(BytesIO(data))
+            image.load()
+            image = ImageOps.exif_transpose(image)
+            buffer = BytesIO()
+            fmt = {"image/jpeg": "JPEG", "image/png": "PNG", "image/webp": "WEBP"}[ctype]
+            save_kwargs = {"format": fmt}
+            if fmt == "JPEG":
+                save_kwargs["quality"] = 95
+            image.save(buffer, **save_kwargs)
+            data = buffer.getvalue()
 
         async with self.get_client() as client:
             await client.put_object(
@@ -57,15 +54,13 @@ class S3Client:
                 Key=object_name,
                 Body=data,
                 ContentType=ctype,
-                ContentDisposition="inline",
-                CacheControl="no-cache"
             )
-        return f"{settings.DB.images_uri}/{self.bucket_name}/{object_name}"
+        return f"{self.public_url}/{object_name}"
 
 s3 = S3Client(
-        access_key   = MINIO_ROOT_USER,
-        secret_key   = MINIO_ROOT_PASSWORD,
-        endpoint     = f"http://{MINIO_HOST}:{MINIO_PORT}",
-        bucket_name  = "just-images"
+    access_key=settings.DB.R2_ACCESS_KEY,
+    secret_key=settings.DB.R2_SECRET_KEY,
+    endpoint=settings.DB.R2_ENDPOINT,
+    bucket_name="just-images",
+    public_url=settings.DB.R2_PUBLIC_URL,
 )
-

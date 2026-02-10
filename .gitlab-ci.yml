@@ -21,14 +21,16 @@ deploy:
       ADMIN_USERNAME=$ADMIN_USERNAME
       ADMIN_PASSWORD=$ADMIN_PASSWORD
       SECRET_SESSION_KEY=$SECRET_SESSION_KEY
+      R2_ACCESS_KEY=$R2_ACCESS_KEY
+      R2_SECRET_KEY=$R2_SECRET_KEY
+      R2_ENDPOINT=$R2_ENDPOINT
+      R2_PUBLIC_URL=$R2_PUBLIC_URL
       DEBUG=false
       EOF
-      
+
 
     # Даем права на скрипты
     - chmod +x scripts/entrypoint.sh
-    - chmod +x scripts/init_minio.sh
-    - chmod +x *.sh 2>/dev/null || true
 
     # Останавливаем старые контейнеры
     - docker compose down || true
