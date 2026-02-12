@@ -18,6 +18,12 @@ class ProductUpdateStrings(BaseModel):
     category_title: str|None = Field(default=None)
     product_type: str|None = Field(default=None)
 
+    @field_validator("*", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "":
+            return None
+        return v
 
 class ProductUpdate(ProductUpdateStrings):
     image: str|None = Field(default=None)
