@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.models import Product
 from ..repositories import products as prod_repo
-from ..schemas.products import ProductCreate, ProductRead
+from ..schemas.products import ProductCreate, ProductRead,ProductUpdate,ProductUpdateStrings
 from .dependencies import get_product_dp
 from fastapi import HTTPException
 
@@ -38,3 +38,14 @@ async def get_product(product_id:int, session:AsyncSession) -> ProductRead:
 async def delete_product(product_id:int ,session: AsyncSession) -> None:
     product = await get_product_dp(product_id, session)
     return await prod_repo.delete_product(session, product)
+
+async def partial_update_product(product_id:int, new_products_data:ProductUpdateStrings,image_url:str|None,data_url:str|None, session:AsyncSession) -> ProductRead:
+    product = await get_product_dp(product_id,session)
+    update_data = new_products_data.model_dump(exclude_unset=True)
+    if image_url is not None:
+        update_data["image"] = image_url
+    if data_url is not None:
+        update_data["product_data"] = data_url
+    updated_product = ProductUpdate(**update_data)
+    product = await prod_repo.partial_update_product(session=session,product=product,new_product=updated_product)
+    return ProductRead.model_validate(product)

@@ -1,15 +1,27 @@
 from typing import Optional
-from pydantic import BaseModel,ConfigDict
-
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ProductCreate(BaseModel):
-    product_type: str
     title: str
     description: str
     price: int
     rating: float
-    category: str | None
+    category: str
+    product_type: str
+
+class ProductUpdateStrings(BaseModel):
+    title: str|None = Field(default=None)
+    description: str|None = Field(default=None)
+    price: int|None = Field(default=None)
+    rating: float|None = Field(default=None)
+    category_title: str|None = Field(default=None)
+    product_type: str|None = Field(default=None)
+
+
+class ProductUpdate(ProductUpdateStrings):
+    image: str|None = Field(default=None)
+    product_data: str|None = Field(default=None)
 
 
 class ProductRead(BaseModel):
