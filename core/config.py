@@ -7,10 +7,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class DB_Settings(BaseSettings):
     db_url: str = 'postgresql+asyncpg://postgres:password123@postgresql:5432/postgres'
 
-    R2_ACCESS_KEY: str = Field(validation_alias='R2_ACCESS_KEY')
-    R2_SECRET_KEY: str = Field(validation_alias='R2_SECRET_KEY')
-    R2_ENDPOINT: str = Field(validation_alias='R2_ENDPOINT')
-    R2_PUBLIC_URL: str = Field(validation_alias='R2_PUBLIC_URL')
+    R2_ACCESS_KEY: str = Field('',validation_alias='R2_ACCESS_KEY')
+    R2_SECRET_KEY: str = Field('',validation_alias='R2_SECRET_KEY')
+    R2_ENDPOINT: str = Field('',validation_alias='R2_ENDPOINT')
+    R2_PUBLIC_URL: str = Field('',validation_alias='R2_PUBLIC_URL')
 
     REDIS_HOST: str = Field('localhost', validation_alias = 'REDIS_HOST')
     REDIS_PORT:int = Field(6379, validation_alias = 'REDIS_PORT' )

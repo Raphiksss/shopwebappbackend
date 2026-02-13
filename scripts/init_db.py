@@ -53,6 +53,20 @@ async def create_initial_admin():
             print("Admin already exists, skipping creation")
 
 
+def run_migrations():
+    """Run pending alembic migrations."""
+    print("Running alembic upgrade head...")
+    result = subprocess.run(
+        ['alembic', 'upgrade', 'head'],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode != 0:
+        print(f"Migration error: {result.stderr}")
+    else:
+        print("Migrations applied successfully")
+
+
 def stamp_head():
     """Mark all migrations as applied without running them."""
     print("Stamping database with current head...")
@@ -77,7 +91,8 @@ async def main():
         await create_tables()
         stamp_head()
     else:
-        print("Database already has tables, skipping creation")
+        print("Database already has tables, running migrations...")
+        run_migrations()
 
     await create_initial_admin()
     print("=== Initialization Complete ===")
