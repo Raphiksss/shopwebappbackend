@@ -14,6 +14,10 @@ async def get_user(tg_id: int, session: AsyncSession) -> User:
     res = await session.execute(stmt)
     return res.scalars().one_or_none()
 
+# async def get_user(user_id:int, session: AsyncSession) -> User|None:
+#     res = await session.get(User,user_id)
+#     return res
+
 async def get_users(session: AsyncSession):
     stmt = select(User).order_by(User.id)
     users = await session.execute(stmt)
