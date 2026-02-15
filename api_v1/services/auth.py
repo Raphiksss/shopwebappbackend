@@ -5,9 +5,6 @@ from fastapi import Request, HTTPException
 from pydantic import SecretStr,BaseModel
 import bcrypt
 
-class Login(BaseModel):
-    username:str
-    password:str
 
 
 async def hash_password(password:str) -> bytes:
@@ -40,5 +37,9 @@ async def check_admin(username:str, password:str, session: AsyncSession):
 async def check_if_auth(request: Request):
     admin_id = request.session.get("admin_id")
     if not admin_id:
-        return False
-    return True
+        raise HTTPException(status_code=401, detail = "Not authenticated")
+    return admin_id
+
+async def logout(request: Request):
+    request.session.pop("admin_id")
+    return None

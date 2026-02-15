@@ -14,9 +14,8 @@ async def add_favorite(user_id: int, product_id: int, session: AsyncSession):
     stmt =  favorites_table.insert().values(user_id=user_id,product_id=product_id)
     try:
         await session.execute(stmt)
-    except Exception as e :
-        # raise HTTPException(400, "Bad request")
-        print(e)
+    except IntegrityError:
+        raise HTTPException(400, "Bad request")
     await session.commit()
     return "success"
 

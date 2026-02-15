@@ -20,15 +20,17 @@ router = APIRouter(tags = ["Products"])
                 ,
                 404: {
                     "model": general.ErrorResponse,
-                    "description": "Нарушен FK"},
+                    "description": "Нарушен FK(Такой категории не существует)"},
                 413: {
                     "model": general.ErrorResponse,
                     "description": "Файл слишком большой"
+                },
+                415: {
+                    "model": general.ErrorResponse,
+                    "description": "Некоректный формат файла"
                 }
 })
-async def create_product(text_data:ProductCreate = Depends(text_data), img: UploadFile = Depends(upload_foto), data: Optional[UploadFile] = None, session:AsyncSession = Depends(get_session),chk:bool = Depends(auth.check_if_auth)):
-    if not chk:
-        raise HTTPException(status_code=401,detail="Not authenticated")
+async def create_product(text_data:ProductCreate = Depends(text_data), img: UploadFile = Depends(upload_foto), data: Optional[UploadFile] = None, session:AsyncSession = Depends(get_session),_=Depends(auth.check_if_auth)):
     image_url = await s3_client.upload_file(img)
     file_location = None
     if data:
@@ -66,10 +68,7 @@ async def get_product(product_id: int, session: AsyncSession = Depends(get_sessi
                 "description": "Файл слишком большой"
                 }
 } )
-async def product_partial_update(product_id:int,text_data:ProductUpdateStrings = Depends(text_data_partial),img:Optional[UploadFile] = None,data:Optional[UploadFile] = None,session:AsyncSession = Depends(get_session), chk:bool = Depends(auth.check_if_auth)):
-    if not chk:
-        raise HTTPException(status_code=401,detail="Not authenticated")
-    print(text_data)
+async def product_partial_update(product_id:int,text_data:ProductUpdateStrings = Depends(text_data_partial),img:Optional[UploadFile] = None,data:Optional[UploadFile] = None,session:AsyncSession = Depends(get_session), _=Depends(auth.check_if_auth)):
     image_url = None
     data_url = None
     if img:
@@ -88,7 +87,5 @@ async def product_partial_update(product_id:int,text_data:ProductUpdateStrings =
             404: {
                 "model": general.ErrorResponse,
                 "description": "Товар отсутвует"}}, )
-async def delete_products(product_id:int, session: AsyncSession = Depends(get_session), chk:bool = Depends(auth.check_if_auth)):
-    if not chk:
-        raise HTTPException(status_code=401,detail="Not authenticated")
+async def delete_products(product_id:int, session: AsyncSession = Depends(get_session), _=Depends(auth.check_if_auth)):
     return await products_services.delete_product(product_id, session)
