@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict,Field
 
 
 class UserCreate(BaseModel):
@@ -6,9 +6,17 @@ class UserCreate(BaseModel):
     tg_id: int
 
 class UserRead(BaseModel):
+    id:int
     username: str
     balance: int
     tg_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+class UserPartialUpdate(BaseModel):
+    username:str|None = Field(default = None)
+    balance: int| None = Field(default = None)
+
     model_config = ConfigDict(from_attributes=True)
 
 class YooMoneyWebhookPayload(BaseModel):

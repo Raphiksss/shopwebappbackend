@@ -5,6 +5,7 @@ from core.models import User
 from ..repositories import users_repository
 from ..schemas import users_schemas, messages
 from core.rabbitmq import publish_stars_replenishment, publish_crypto_bot_replenishment
+from ..services.dependencies import get_user_dp
 
 async def create_user(user: users_schemas.UserCreate, session: AsyncSession):
     user = User(**user.model_dump())
@@ -20,12 +21,18 @@ async def get_user(tg_id: int, session: AsyncSession) -> User:
         raise HTTPException(status_code=404, detail='User not found')
     return res
 
+async def update_user_partial(user_id:int,new_user:users_schemas.UserPartialUpdate,session:AsyncSession):
+    user:User = await get_user_dp(user_id,session)
+    new_user = await users_repository.update_user_partial(new_user,user,session)
+    await session.refresh(user)
+    return user
+
+
 async def replenishment_balance_stars(tg_id: int, amount: int):
     message = messages.ReplenismentMessage(tg_id = tg_id, amount = amount)
     await publish_stars_replenishment(message.model_dump())
 
     return "success"
-
 
 async def replenishment_balance_crypto_bot(tg_id: int, amount: int):
     message = messages.ReplenismentMessage(tg_id = tg_id, amount = amount)

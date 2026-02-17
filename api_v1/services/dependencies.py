@@ -1,10 +1,8 @@
 from typing import Optional, Type
-
 from pydantic_core import ValidationError
-
 from core.db_helper import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
-from core.models import Product
+from core.models import Product, User
 from ..schemas.products import ProductCreate,ProductUpdateStrings
 from fastapi import Form, UploadFile, File, HTTPException, Depends, status
 
@@ -51,5 +49,11 @@ async def get_product_dp(product_id: int, session: AsyncSession = Depends(get_se
         raise HTTPException(404, detail="Товар не найден")
     return product
 
+async def get_user_dp(user_id: int,session:AsyncSession) -> Type[User]:
+    user = await session.get(User, user_id)
+    print('d')
+    if not user:
+        raise HTTPException(404, detail="Пользователь не найден")
+    return user
 
 

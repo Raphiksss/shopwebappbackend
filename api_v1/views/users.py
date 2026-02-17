@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.db_helper import get_session
-from ..schemas.users import UserRead, UserCreate
+from ..schemas.users import UserRead, UserCreate, UserPartialUpdate
 from ..services import users_services
 from fastapi import APIRouter, status, Depends, Form, HTTPException
 from ..repositories import users_repository
@@ -8,7 +8,7 @@ from ..schemas.general import ErrorResponse
 from ..services.Yoomoney import create_invoice, verify_webhook_signature
 from core import settings, logger
 import redis.asyncio as aioredis
-
+from ..services.auth import check_if_auth
 
 router = APIRouter(tags = ["Users"])
 
@@ -29,6 +29,14 @@ async def create_user(user:UserCreate, session: AsyncSession = Depends(get_sessi
             })
 async def get_user(tg_id: int, session: AsyncSession = Depends(get_session)):
     return await users_services.get_user(tg_id, session)
+
+@router.patch("/{user_id}/",summary="Partial user update", status_code = status.HTTP_200_OK,response_model=UserRead,
+              responses = {
+                  401: {"model":ErrorResponse, "description": "Не авторизован"},
+                  404: {"model":ErrorResponse, "description": "Пользователя не существует"}
+              })
+async def user_partial_update(user_id:int,new_user:UserPartialUpdate,session:AsyncSession=Depends(get_session),_=Depends(check_if_auth)):
+    return await users_services.update_user_partial(user_id, new_user,session)
 
 @router.post("/replenisment/stars/", summary = "Создания счета на оплату звезды", status_code = status.HTTP_200_OK)
 async def replenishment_balance(tg_id: int, amount: int):
