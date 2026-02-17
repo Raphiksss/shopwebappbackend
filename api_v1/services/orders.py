@@ -26,8 +26,8 @@ async def create_order(tg_id: int, session: AsyncSession):
 
     #получаем айдишники товаров с редиса, названия и считаем сумму
     for key, value in cart_products["products"].items():
-        res = await products.get_product(key, session)
-        products_ids.append(key)
+        res = await products.get_product(int(key), session)
+        products_ids.append(int(key))
         sum += res.price * value
         items[res.title] = value
         if res.product_type == "instantly":
