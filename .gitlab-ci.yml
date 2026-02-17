@@ -36,7 +36,7 @@ deploy:
     - docker compose down || true
 
     # Запускаем новые контейнеры
-    - docker compose up -d --build --force-recreate --no-cache
+    - docker compose up -d --build --force-recreate
   only:
     - main
   when: manual
