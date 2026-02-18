@@ -19,8 +19,8 @@ async def create_order(tg_id: int, session: AsyncSession = Depends(get_session))
     return res
 
 @router.get("/", summary="Get Orders",status_code=status.HTTP_200_OK,responses={401: {"model":ErrorResponse,"description":"Не авторизован"}})
-async def get_orders(filter_by_status:Optional[str] = None,session: AsyncSession = Depends(get_session),_=Depends(auth.check_if_auth)):
-    return await orders.get_orders(filter_by_status, session)
+async def get_orders(status:Optional[str] = None,session: AsyncSession = Depends(get_session),_=Depends(auth.check_if_auth)):
+    return await orders.get_orders(status, session)
 
 @router.patch("/",summary="Order Partial Update",status_code=status.HTTP_200_OK,responses={
     401: {"model":ErrorResponse,"description":"Не авторизован"},
