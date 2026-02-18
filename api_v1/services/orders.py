@@ -8,6 +8,7 @@ from ..repositories import orders
 from core.models import Order
 from core.rabbitmq import publish_instant_delivery, publish_order_notification
 from ..schemas.messages import InstantDeliveryMessage, OrderNotificationMessage
+from ..schemas.orders import PartialOrderUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -84,3 +85,12 @@ async def create_order(tg_id: int, session: AsyncSession):
         logger.info(f"Published order notification for order {new_order.id}")
 
     return new_order
+
+async def get_orders(filter_by_status:str|None, session: AsyncSession):
+    return await orders.get_orders(session, filter_by_status)
+
+async def product_partial_update(order_id:int,new_order:PartialOrderUpdate,session:AsyncSession):
+    order = await session.get(Order, order_id)
+    if not order:
+        raise HTTPException(404, detail="Order not found")
+    return await orders.partial_order_update(order,new_order,session)
