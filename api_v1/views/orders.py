@@ -22,7 +22,7 @@ async def create_order(tg_id: int, session: AsyncSession = Depends(get_session))
 async def get_orders(status:Optional[str] = None,session: AsyncSession = Depends(get_session),_=Depends(auth.check_if_auth)):
     return await orders.get_orders(status, session)
 
-@router.patch("/",summary="Order Partial Update",status_code=status.HTTP_200_OK,responses={
+@router.patch("/{order_id}/",summary="Order Partial Update",status_code=status.HTTP_200_OK,responses={
     401: {"model":ErrorResponse,"description":"Не авторизован"},
     404: {"model":ErrorResponse,"description": "Заказ не найден"}
 })
