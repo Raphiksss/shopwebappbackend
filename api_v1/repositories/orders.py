@@ -13,19 +13,20 @@ async def create_order(order: Order, session: AsyncSession) -> Order:
     await session.refresh(order)
     return order
 
-async def get_orders(session: AsyncSession,filter:str|None) -> List[Order]:
-    if filter:
-        stmt = select(Order).options(
+async def get_orders(session: AsyncSession,filter:str|None,page:int|None,limit:int|None) -> List[Order]:
+    stmt = select(Order).options(
         selectinload(Order.items)
-                    .selectinload(OrdersItem.product_rel),
-        selectinload(Order.user_rel)).order_by(Order.id).filter(Order.status == filter)
-    else:
-        stmt = select(Order).options(
-            selectinload(Order.items)
-                .selectinload(OrdersItem.product_rel),
-            selectinload(Order.user_rel)).order_by(Order.id)
+            .selectinload(OrdersItem.product_rel),
+        selectinload(Order.user_rel)).order_by(Order.id)
+
+    if filter:
+        stmt = stmt.filter(Order.status == filter)
+    if page and limit:
+        stmt = stmt.offset((page - 1) * limit).limit(limit)
+
     res = await session.execute(stmt)
-    orders = res.scalars().unique().all()
+
+    orders = res.scalars().all()
     return list(orders)
 
 async def partial_order_update(order:Order,new_order:PartialOrderUpdate,session:AsyncSession):

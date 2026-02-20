@@ -86,8 +86,8 @@ async def create_order(tg_id: int, session: AsyncSession):
 
     return new_order
 
-async def get_orders(filter_by_status:str|None, session: AsyncSession):
-    res = await orders.get_orders(session, filter_by_status)
+async def get_orders(filter_by_status:str|None,page:int|None,limit:int|None, session: AsyncSession):
+    res = await orders.get_orders(session, filter_by_status,page,limit)
     return list(res)
 
 async def product_partial_update(order_id:int,new_order:PartialOrderUpdate,session:AsyncSession):
