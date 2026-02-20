@@ -37,7 +37,7 @@ async def partial_category_update(category_id:int,title:Optional[str]=Form(None)
 
 
 
-@router.delete('/', summary="Delete category", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete('/{category_id}/', summary="Delete category", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(category_id:int, session: AsyncSession = Depends(get_session), _=Depends(auth.check_if_auth)):
     await categories_repositories.delete_category(category_id, session)
     return None
