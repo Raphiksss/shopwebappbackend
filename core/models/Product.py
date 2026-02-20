@@ -10,12 +10,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .Review import Review
     from .Category import Category
+    from .Order import OrdersItem
 
 class Product(Base):
     title: Mapped[str]
     description: Mapped[str]
     price: Mapped[int]
-    category_title: Mapped[str] = mapped_column(ForeignKey("categorys.title"), nullable=True)
+    category_title: Mapped[str] = mapped_column(ForeignKey("categorys.title"), nullable=True, onupdate="CASCADE")
     image: Mapped[str]
     rating: Mapped[float]
     fans: Mapped[list[User]] = relationship(
@@ -27,4 +28,5 @@ class Product(Base):
     category: Mapped["Category"] = relationship(back_populates = "products")
     product_type: Mapped[str] = mapped_column(Enum("instantly", "notinstantly", name="processing_mode"), server_default="notinstantly")
     product_data: Mapped[str|None] = mapped_column(server_default=None, nullable=True)
+    in_order:Mapped[list["OrdersItem"]] = relationship(back_populates="product_rel")
 

@@ -2,9 +2,9 @@ from typing import List
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio.session import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from ..schemas.orders import PartialOrderUpdate
-from core.models import Order
+from core.models import Order,OrdersItem
 
 
 async def create_order(order: Order, session: AsyncSession) -> Order:
@@ -15,11 +15,17 @@ async def create_order(order: Order, session: AsyncSession) -> Order:
 
 async def get_orders(session: AsyncSession,filter:str|None) -> List[Order]:
     if filter:
-        stmt = select(Order).options(joinedload(Order.items)).order_by(Order.id).filter(Order.status == filter)
+        stmt = select(Order).options(
+        selectinload(Order.items)
+                    .selectinload(OrdersItem.product_rel),
+        selectinload(Order.user_rel)).order_by(Order.id).filter(Order.status == filter)
     else:
-        stmt = select(Order).options(joinedload(Order.items)).order_by(Order.id)
+        stmt = select(Order).options(
+            selectinload(Order.items)
+                .selectinload(OrdersItem.product_rel),
+            selectinload(Order.user_rel)).order_by(Order.id)
     res = await session.execute(stmt)
-    orders = res.scalars().unique()
+    orders = res.scalars().unique().all()
     return list(orders)
 
 async def partial_order_update(order:Order,new_order:PartialOrderUpdate,session:AsyncSession):

@@ -6,7 +6,7 @@ from starlette import status
 from ..schemas.general import ErrorResponse
 
 from core.db_helper import get_session
-from ..schemas.orders import CreateOrder,PartialOrderUpdate
+from ..schemas.orders import CreateOrder,PartialOrderUpdate,ReadOrders
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..services import orders,auth
 
@@ -18,9 +18,10 @@ async def create_order(tg_id: int, session: AsyncSession = Depends(get_session))
     res = await orders.create_order(tg_id, session)
     return res
 
-@router.get("/", summary="Get Orders",status_code=status.HTTP_200_OK,responses={401: {"model":ErrorResponse,"description":"Не авторизован"}})
+@router.get("/", summary="Get Orders",status_code=status.HTTP_200_OK,response_model=list[ReadOrders],responses={401: {"model":ErrorResponse,"description":"Не авторизован"}})
 async def get_orders(status:Optional[str] = None,session: AsyncSession = Depends(get_session),_=Depends(auth.check_if_auth)):
     return await orders.get_orders(status, session)
+
 
 @router.patch("/{order_id}/",summary="Order Partial Update",status_code=status.HTTP_200_OK,responses={
     401: {"model":ErrorResponse,"description":"Не авторизован"},

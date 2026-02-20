@@ -112,7 +112,6 @@ session = AiohttpSession(timeout=60)
 current_dir = os.path.dirname(__file__)
 
 async def give_a_product(tg_id:int, product_title:str, product_data:str):
-    bot = Bot(token=API_TOKEN)
     text =f"Товар: {product_title}. Выдача автомотическая"
 
     product_data = product_data.replace("\\", "/")
@@ -120,14 +119,14 @@ async def give_a_product(tg_id:int, product_title:str, product_data:str):
     file_path = os.path.normpath(file_path)
 
     document = FSInputFile(file_path)
-    await bot.send_document(chat_id=tg_id, document=document, caption=text)
-    await bot.session.close()
+    await bt.send_document(chat_id=tg_id, document=document, caption=text)
+    await bt.session.close()
 
 
 
 
 async def include_order(tg_id:int, username:str, order_id:int, items:dict, sum:int):
-    bot = Bot(token=API_TOKEN)
+    bt = Bot(token=API_TOKEN)
     text = f" <b>Заказ №{order_id}</b>\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
     for i, (key, value) in enumerate(items.items()):
         text += f"     {i + 1}) {value} {key}\n\n"
@@ -138,10 +137,10 @@ async def include_order(tg_id:int, username:str, order_id:int, items:dict, sum:i
             f"можешь "
              f"✅ <i>Спасибо за ваш заказ!</i>")
 
-    await bot.send_message(chat_id= tg_id, text=text, parse_mode='HTML')
+    await bt.send_message(chat_id= tg_id, text=text, parse_mode='HTML')
     admin_text = f"Был оформлен заказ на @{username}\n\n"+text
-    await bot.send_message(chat_id=ADMIN_TG_ID, text=admin_text, parse_mode='HTML' )
-    await bot.session.close()
+    await bt.send_message(chat_id=ADMIN_TG_ID, text=admin_text, parse_mode='HTML' )
+    await bt.session.close()
 
 
 
