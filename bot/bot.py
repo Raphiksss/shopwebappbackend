@@ -1,5 +1,6 @@
 import os
 import math
+import asyncio
 from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.filters import Command
 from sqlalchemy.exc import IntegrityError
@@ -11,37 +12,63 @@ from core import settings
 from core.models import User
 from aiogram.types import FSInputFile, LabeledPrice, PreCheckoutQuery,InlineKeyboardButton
 import requests
+import redis.asyncio as aioredis
 
 API_TOKEN = settings.BOT.bot_token
 ADMIN_TG_ID = settings.BOT.admin_tg_id
 CRYPTO_BOT_TOKEN = settings.BOT.crypto_bot_token
-
-#настроить конфиги для токена и курсов
-#разнести по файлам а то душно уже
+REDIS_HOST = settings.DB.REDIS_HOST
+REDIS_PORT = settings.DB.REDIS_PORT
 
 cr_responses = {}
 cr_amounts = {}
 
-bt = Bot(token=API_TOKEN)
+_current_bot = None
 dp = Dispatcher()
 
 router = Router()
 
+
+async def get_bot():
+    async with aioredis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0,decode_responses=True) as r:
+        bot_token = await r.get("bot_token")
+    if not bot_token:
+        return Bot(token=API_TOKEN)
+    return Bot(token=bot_token)
+
+async def get_crypto_bot_token():
+    async with aioredis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0,decode_responses=True) as r:
+        crypto_bot_token = await r.get("crypto_bot_token")
+    if not crypto_bot_token:
+        return CRYPTO_BOT_TOKEN
+    return crypto_bot_token
+
+
+
 async def stars_buying(tg_id: int,amount:int):
-    await bt.send_invoice(
+    bot = await get_bot()
+    stars_exchange_rate = None
+    async with aioredis.Redis(host=REDIS_HOST,port=REDIS_PORT) as r:
+        stars_exchange_rate = await r.get("stars_exchange_rate")
+        print(float(stars_exchange_rate))
+    if not stars_exchange_rate:
+        stars_exchange_rate = settings.BOT.stars_exchange_rate
+    await bot.send_invoice(
         chat_id=tg_id,
         title="Пополнения баланса",
         description=f"Пополнение баланса на {amount} рублей.",
         payload=f"order_{tg_id}_{amount}",
         currency="XTR",
-        prices=[LabeledPrice(label="Цена", amount=int(amount* settings.BOT.stars_exchange_rate))],
+        prices=[LabeledPrice(label="Цена", amount=int(amount* float(stars_exchange_rate)))],
 
         # reply_markup=payment_keyboard()
     )
+    await bot.session.close()
 
 
-def get_pay_link(amount):
-    headers = {"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN}
+async def get_pay_link(amount):
+    crypto_bot_token = await get_crypto_bot_token()
+    headers = {"Crypto-Pay-API-Token": crypto_bot_token}
     data = {"asset": "USDT", "amount": amount}
     response = requests.post('https://pay.crypt.bot/api/createInvoice', headers=headers, json=data)
     if response.ok:
@@ -49,9 +76,10 @@ def get_pay_link(amount):
         return response_data['result']['pay_url'], response_data['result']['invoice_id']
     return None, None
 
-def check_invoice_status(invoice_id):
+async def check_invoice_status(invoice_id):
     """Проверяет статус инвойса в Crypto Bot"""
-    headers = {"Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN}
+    crypto_bot_token = await get_crypto_bot_token()
+    headers = {"Crypto-Pay-API-Token": crypto_bot_token}
     response = requests.get(f'https://pay.crypt.bot/api/getInvoices?invoice_ids={invoice_id}', headers=headers)
     if response.ok:
         response_data = response.json()
@@ -61,7 +89,8 @@ def check_invoice_status(invoice_id):
     return None, 0
 
 async def crypto_replenishment(tg_id:int, amount:int):
-    # Тестовая сумма в USDT (можно изменить или принимать от пользователя)
+    bot = await get_bot()
+
     amount = amount
     chat_id = tg_id
 
@@ -70,7 +99,7 @@ async def crypto_replenishment(tg_id:int, amount:int):
     cr_amounts[chat_id] = us_amount
 
     # Получаем ссылку на оплату
-    pay_link, invoice_id = get_pay_link(us_amount)
+    pay_link, invoice_id = await get_pay_link(us_amount)
 
     if pay_link and invoice_id:
         # Сохраняем invoice_id для отслеживания платежа
@@ -82,7 +111,7 @@ async def crypto_replenishment(tg_id:int, amount:int):
             [types.InlineKeyboardButton(text="✅ Проверить оплату", callback_data=f"check_payment_{invoice_id}")]
         ])
 
-        await bt.send_message(
+        await bot.send_message(
             chat_id=chat_id, text=
             f"💰 Пополнение баланса на {us_amount} USDT\n\n"
             f"Нажмите кнопку ниже для оплаты через Crypto Bot.\n"
@@ -90,8 +119,8 @@ async def crypto_replenishment(tg_id:int, amount:int):
             reply_markup=keyboard
         )
     else:
-        await bt.send_message(chat_id=chat_id, text = "❌ Ошибка при создании счета. Попробуйте позже.")
-
+        await bot.send_message(chat_id=chat_id, text = "❌ Ошибка при создании счета. Попробуйте позже.")
+    await bot.session.close()
 
 @router.pre_checkout_query()
 async def pre_checkout_handler(pre_checkout_query: PreCheckoutQuery):
@@ -112,6 +141,8 @@ session = AiohttpSession(timeout=60)
 current_dir = os.path.dirname(__file__)
 
 async def give_a_product(tg_id:int, product_title:str, product_data:str):
+    bot = await get_bot()
+
     text =f"Товар: {product_title}. Выдача автомотическая"
 
     product_data = product_data.replace("\\", "/")
@@ -119,14 +150,14 @@ async def give_a_product(tg_id:int, product_title:str, product_data:str):
     file_path = os.path.normpath(file_path)
 
     document = FSInputFile(file_path)
-    await bt.send_document(chat_id=tg_id, document=document, caption=text)
-    await bt.session.close()
+    await bot.send_document(chat_id=tg_id, document=document, caption=text)
+    await bot.session.close()
 
 
 
 
 async def include_order(tg_id:int, username:str, order_id:int, items:dict, sum:int):
-    bt = Bot(token=API_TOKEN)
+    bot = await get_bot()
     text = f" <b>Заказ №{order_id}</b>\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
     for i, (key, value) in enumerate(items.items()):
         text += f"     {i + 1}) {value} {key}\n\n"
@@ -137,10 +168,10 @@ async def include_order(tg_id:int, username:str, order_id:int, items:dict, sum:i
             f"можешь "
              f"✅ <i>Спасибо за ваш заказ!</i>")
 
-    await bt.send_message(chat_id= tg_id, text=text, parse_mode='HTML')
+    await bot.send_message(chat_id= tg_id, text=text, parse_mode='HTML')
     admin_text = f"Был оформлен заказ на @{username}\n\n"+text
-    await bt.send_message(chat_id=ADMIN_TG_ID, text=admin_text, parse_mode='HTML' )
-    await bt.session.close()
+    await bot.send_message(chat_id=ADMIN_TG_ID, text=admin_text, parse_mode='HTML' )
+    await bot.session.close()
 
 
 
@@ -160,7 +191,9 @@ async def cmd_start(message: types.Message):
 async def admin_panel(message: types.Message):
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Панель администратора", url=f"https://redstoreapp.com/admin")]])
     if message.from_user.id == int(ADMIN_TG_ID):
-        await bt.send_message(chat_id=ADMIN_TG_ID, text="✅",reply_markup=keyboard)
+        bot = await get_bot()
+        await bot.send_message(chat_id=ADMIN_TG_ID, text="✅",reply_markup=keyboard)
+        await bot.session.close()
     else:
         await message.answer("❌")
 
@@ -178,7 +211,7 @@ async def check_payment_callback(callback: types.CallbackQuery):
     invoice_id = callback.data.replace("check_payment_", "")
 
     # Проверяем статус платежа
-    status, amount = check_invoice_status(invoice_id)
+    status, amount = await check_invoice_status(invoice_id)
 
     if status == "paid":
         # Конвертируем USDT в рубли (курс можно настроить)
@@ -222,8 +255,17 @@ async def cmd_profile(message: types.Message):
 # Подключаем роутер к диспетчеру
 dp.include_router(router)
 
+async def restart_polling():
+    global _current_bot
+    if _current_bot:
+        await dp.stop_polling()
+
 async def run_polling():
-    try:
-        await dp.start_polling(bt, skip_updates=True)
-    finally:
-        await bt.session.close()
+    global _current_bot
+    while True:
+        _current_bot = await get_bot()
+        try:
+            await dp.start_polling(_current_bot, skip_updates=True)
+        finally:
+            await _current_bot.session.close()
+            _current_bot = None

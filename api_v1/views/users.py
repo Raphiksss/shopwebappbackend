@@ -81,7 +81,7 @@ async def yoomoney_webhook(
     logger.debug(f"[YooMoney Webhook] Secret length: {len(settings.YOOMONEY_NOTIFICATION_SECRET)}")
 
     # 2. Проверка подписи
-    if not verify_webhook_signature(payload, settings.YOOMONEY_NOTIFICATION_SECRET):
+    if not await verify_webhook_signature(payload):
         logger.warn(f"[YooMoney Webhook] Signature verification FAILED")
         raise HTTPException(status_code=403, detail="Invalid signature")
 

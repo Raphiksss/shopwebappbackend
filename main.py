@@ -3,7 +3,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 import uvicorn
-from bot.bot import bt, dp
+from bot.bot import dp,run_polling
 from bot.consumers import start_consumers, stop_consumers
 from core import settings
 from core import logger
@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
 
     # Запускаем Telegram bot как asyncio Task
     bot_task = asyncio.create_task(
-        dp.start_polling(bt, skip_updates=True)
+        run_polling()
     )
     logger.info("Telegram bot started as asyncio task")
 
@@ -42,9 +42,6 @@ async def lifespan(app: FastAPI):
         await bot_task
     except asyncio.CancelledError:
         logger.info("Bot task cancelled successfully")
-
-    await bt.session.close()
-    logger.info("Bot session closed")
 
     # Останавливаем RabbitMQ consumers
     await stop_consumers()

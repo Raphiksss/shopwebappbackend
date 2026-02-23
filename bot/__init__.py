@@ -1,1 +1,1 @@
-from .bot import bt
+from .bot import run_polling
