@@ -14,7 +14,7 @@ async def set_accent_color(color:AssentColor,_=Depends(check_if_auth)):
     return await change_accent_color(color.color)
 
 @router.get("/accent_color/",summary="Get accent color")
-async def accent_color(_=Depends(check_if_auth)):
+async def accent_color():
     return await get_accent_color()
 
 @router.post('/stars_exchange_rate/',summary="Set stars exchange rate",responses={
@@ -24,7 +24,7 @@ async def set_stars_exchange_rate(exchange_rate:StarsExchangeRate,_=Depends(chec
     return await change_stars_exchange_rate(exchange=exchange_rate.exchange_rate)
 
 @router.get('/stars_exchange_rate/',summary="Get stars exchange rate")
-async def stars_exchange_rate(_=Depends(check_if_auth)):
+async def stars_exchange_rate():
     return await get_stars_exchange_rate()
 
 @router.post('/bot_token/',summary="Set bot token",responses=
