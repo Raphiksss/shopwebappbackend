@@ -60,8 +60,6 @@ async def create_order(tg_id: int, session: AsyncSession):
 
     cart.del_all_card(tg_id)
 
-    # Публикуем сообщения в RabbitMQ для асинхронной обработки
-    # 1. Отправляем мгновенные товары через RabbitMQ
     for product in instant_products:
         message = InstantDeliveryMessage(
             tg_id=tg_id,
@@ -72,7 +70,6 @@ async def create_order(tg_id: int, session: AsyncSession):
         await publish_instant_delivery(message.model_dump())
         logger.info(f"Published instant delivery for product '{product['product_title']}' in order {new_order.id}")
 
-    # 2. Если есть не-мгновенные товары, отправляем уведомление
     if nt_i:
         notification = OrderNotificationMessage(
             tg_id=new_order.user,

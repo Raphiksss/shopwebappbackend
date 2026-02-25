@@ -5,8 +5,6 @@ from fastapi import Request, HTTPException
 from pydantic import SecretStr,BaseModel
 import bcrypt
 
-
-
 async def hash_password(password:str) -> bytes:
     salt = bcrypt.gensalt()
     pb = password.encode()

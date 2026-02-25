@@ -16,7 +16,7 @@ class Product(Base):
     title: Mapped[str]
     description: Mapped[str]
     price: Mapped[int]
-    category_title: Mapped[str] = mapped_column(ForeignKey("categorys.title"), nullable=True, onupdate="CASCADE")
+    category_title: Mapped[str] = mapped_column(ForeignKey("categorys.title", onupdate="CASCADE"), nullable=True)
     image: Mapped[str]
     rating: Mapped[float]
     fans: Mapped[list[User]] = relationship(
