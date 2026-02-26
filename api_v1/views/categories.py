@@ -9,12 +9,14 @@ from core.db_helper import get_session
 from core import s3_client
 from ..repositories import categories as categories_repositories
 from ..schemas.general import ErrorResponse
+from ..services.images import upload_image
+
 
 router = APIRouter(tags = ["Categories"])
 
 @router.post("/", summary = "Create a new category", status_code = status.HTTP_201_CREATED, response_model = CategoryRead)
 async def create_category(category_title:str = Form(...,description= "Название категории"), img:UploadFile = Depends(upload_foto), session: AsyncSession = Depends(get_session), _=Depends(auth.check_if_auth)):
-    image_url = await s3_client.upload_file(img)
+    image_url = await upload_image(img)
     return await categories_services.create_category(category_title, image_url, session)
 
 @router.get("/", summary = "Get categories", status_code = status.HTTP_200_OK, response_model = list[CategoryRead])
