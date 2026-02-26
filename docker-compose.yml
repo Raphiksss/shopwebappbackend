@@ -5,7 +5,7 @@ services:
       context: ./
       dockerfile: Dockerfile
     volumes:
-      - ./media:/var/www/media
+      - /var/www/www-root/data/www/media.redstoreapp.com:/var/www/media
     env_file:
       - .env
     ports:
