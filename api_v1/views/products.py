@@ -1,6 +1,6 @@
 import os
 from typing import Optional
-
+from ..services.images import upload_image
 from fastapi import APIRouter, Depends, UploadFile, status, File, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.db_helper import get_session
@@ -31,7 +31,7 @@ router = APIRouter(tags = ["Products"])
                 }
 })
 async def create_product(text_data:ProductCreate = Depends(text_data), img: UploadFile = Depends(upload_foto), data: Optional[UploadFile] = None, session:AsyncSession = Depends(get_session),_=Depends(auth.check_if_auth)):
-    image_url = await s3_client.upload_file(img)
+    image_url = await upload_image(img)
     file_location = None
     if data:
         if data.size > (50 * 1024 * 1024):
@@ -72,7 +72,7 @@ async def product_partial_update(product_id:int,text_data:ProductUpdateStrings =
     image_url = None
     data_url = None
     if img:
-        image_url = await s3_client.upload_file(img)
+        image_url = await upload_image(img)
     if data:
         if data.size > (50 * 1024 * 1024):
             raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail = "Файл слишком большой")

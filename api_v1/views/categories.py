@@ -34,7 +34,7 @@ async def partial_category_update(category_id:int,title:Optional[str]=Form(None)
     if img:
         if img.content_type not in allowed:
             raise HTTPException(415, "Некоректный формат файла")
-        image_url = await s3_client.upload_file(img)
+        image_url = await upload_image(img)
     return await categories_services.partial_category_update(category_id,title,image_url,session)
 
 
