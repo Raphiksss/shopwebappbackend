@@ -9,7 +9,6 @@ deploy:
     - export PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:$PATH
     - which docker || echo "Docker not in PATH, trying direct path"
   script:
-    # Создаем .env файл
     - |
       cat > .env << EOF
       BOT_TOKEN=$BOT_TOKEN
