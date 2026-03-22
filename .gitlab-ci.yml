@@ -38,6 +38,6 @@ deploy:
     - docker compose up -d --build --force-recreate
   only:
     - main
-  when: manual
+  when: auto
   environment:
     name: production

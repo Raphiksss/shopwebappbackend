@@ -29,6 +29,7 @@ async def get_orders(session: AsyncSession,filter:str|None,page:int|None,limit:i
     orders = res.scalars().all()
     return list(orders)
 
+
 async def partial_order_update(order:Order,new_order:PartialOrderUpdate,session:AsyncSession):
     for name,value in new_order.model_dump(exclude_none=True,exclude_unset=True).items():
         setattr(order,name,value)
