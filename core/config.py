@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     YOOMONEY_NOTIFICATION_SECRET:str = Field(alias = 'YOOMONEY_NOTIFICATION_SECRET')
     SECRET_SESSION_KEY:str = Field(alias = 'SECRET_SESSION_KEY')
     SESSION_EXPIRE_TIME:int = 24 * 60 * 60
+    SESSION_SECURE:bool = True
     DB: DB_Settings = DB_Settings()
     BOT: BOT_Settings = BOT_Settings()
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra='ignore')
