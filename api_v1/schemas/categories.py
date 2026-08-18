@@ -6,9 +6,10 @@ class CategoryRead(BaseModel):
     title: str
     img: str
 
+
 class CategoryPartialUpdate(BaseModel):
-    title: str|None = Field(None)
-    img: str|None = Field(None)
+    title: str | None = Field(None)
+    img: str | None = Field(None)
 
     @field_validator("*", mode="before")
     @classmethod

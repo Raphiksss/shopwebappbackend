@@ -22,10 +22,10 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from core.models.Base import Base
 from core.config import settings
+
 target_metadata = Base.metadata
 
 config.set_main_option("sqlalchemy.url", settings.DB.db_url)
-
 
 
 # other values from the config, defined by the needs of env.py,
@@ -51,14 +51,17 @@ def run_migrations_offline() -> None:
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
-        dialect_opts={"paramstyle": "named"}
+        dialect_opts={"paramstyle": "named"},
     )
 
     with context.begin_transaction():
         context.run_migrations()
 
+
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata, render_as_batch=True)
+    context.configure(
+        connection=connection, target_metadata=target_metadata, render_as_batch=True
+    )
 
     with context.begin_transaction():
         context.run_migrations()

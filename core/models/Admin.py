@@ -1,6 +1,7 @@
 from .Base import Base
 from sqlalchemy.orm import Mapped, mapped_column
 
+
 class Admin(Base):
-    username:Mapped[str] = mapped_column(unique=True)
-    password:Mapped[bytes]
+    username: Mapped[str] = mapped_column(unique=True)
+    password: Mapped[bytes]

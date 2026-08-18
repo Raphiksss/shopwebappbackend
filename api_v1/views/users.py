@@ -10,47 +10,97 @@ from core import settings, logger
 import redis.asyncio as aioredis
 from ..services.auth import check_if_auth
 
-router = APIRouter(tags = ["Users"])
+router = APIRouter(tags=["Users"])
 
-@router.get("/", summary = "Get Users", status_code = status.HTTP_200_OK, response_model=list[UserRead])
+
+@router.get(
+    "/",
+    summary="Get Users",
+    status_code=status.HTTP_200_OK,
+    response_model=list[UserRead],
+)
 async def get_users(session: AsyncSession = Depends(get_session)):
     return await users_repository.get_users(session)
 
-@router.post("/", summary = "Create User", status_code = status.HTTP_201_CREATED, response_model=UserRead,
-             responses = {
-                 409:{"model":ErrorResponse, "description": "Пользователь с таким tg_id уже существует"}
-             })
-async def create_user(user:UserCreate, session: AsyncSession = Depends(get_session)):
+
+@router.post(
+    "/",
+    summary="Create User",
+    status_code=status.HTTP_201_CREATED,
+    response_model=UserRead,
+    responses={
+        409: {
+            "model": ErrorResponse,
+            "description": "Пользователь с таким tg_id уже существует",
+        }
+    },
+)
+async def create_user(user: UserCreate, session: AsyncSession = Depends(get_session)):
     return await users_services.create_user(user, session)
 
-@router.get("/{tg_id}/", summary = "Get User by tg_id", status_code = status.HTTP_200_OK, response_model = UserRead,
-            responses = {
-                404: {"model": ErrorResponse, "description": "Пользователя не существует"}
-            })
+
+@router.get(
+    "/{tg_id}/",
+    summary="Get User by tg_id",
+    status_code=status.HTTP_200_OK,
+    response_model=UserRead,
+    responses={
+        404: {"model": ErrorResponse, "description": "Пользователя не существует"}
+    },
+)
 async def get_user(tg_id: int, session: AsyncSession = Depends(get_session)):
     return await users_services.get_user(tg_id, session)
 
-@router.patch("/{user_id}/",summary="Partial user update", status_code = status.HTTP_200_OK,response_model=UserRead,
-              responses = {
-                  401: {"model":ErrorResponse, "description": "Не авторизован"},
-                  404: {"model":ErrorResponse, "description": "Пользователя не существует"}
-              })
-async def user_partial_update(user_id:int,new_user:UserPartialUpdate,session:AsyncSession=Depends(get_session),_=Depends(check_if_auth)):
-    return await users_services.update_user_partial(user_id, new_user,session)
 
-@router.post("/replenisment/stars/", summary = "Создания счета на оплату звезды", status_code = status.HTTP_200_OK)
+@router.patch(
+    "/{user_id}/",
+    summary="Partial user update",
+    status_code=status.HTTP_200_OK,
+    response_model=UserRead,
+    responses={
+        401: {"model": ErrorResponse, "description": "Не авторизован"},
+        404: {"model": ErrorResponse, "description": "Пользователя не существует"},
+    },
+)
+async def user_partial_update(
+    user_id: int,
+    new_user: UserPartialUpdate,
+    session: AsyncSession = Depends(get_session),
+    _=Depends(check_if_auth),
+):
+    return await users_services.update_user_partial(user_id, new_user, session)
+
+
+@router.post(
+    "/replenisment/stars/",
+    summary="Создания счета на оплату звезды",
+    status_code=status.HTTP_200_OK,
+)
 async def replenishment_balance(tg_id: int, amount: int):
     return await users_services.replenishment_balance_stars(tg_id, amount)
 
-@router.post("/replenisment/crypto/", summary = "Создания счета на оплату криптобот", status_code = status.HTTP_200_OK)
+
+@router.post(
+    "/replenisment/crypto/",
+    summary="Создания счета на оплату криптобот",
+    status_code=status.HTTP_200_OK,
+)
 async def replenishment_balance_cr(tg_id: int, amount: int):
     return await users_services.replenishment_balance_crypto_bot(tg_id, amount)
 
-@router.post("/replenisment/yoomoney/", summary = "Создания счета на оплату Юмани" ,status_code = status.HTTP_200_OK)
+
+@router.post(
+    "/replenisment/yoomoney/",
+    summary="Создания счета на оплату Юмани",
+    status_code=status.HTTP_200_OK,
+)
 async def replenishment_balance_yoomoney(tg_id: int, amount: int):
     return await create_invoice(tg_id, amount)
 
-@router.post("/webhook/yoomoney/", summary="Webhook от YooMoney", status_code=status.HTTP_200_OK)
+
+@router.post(
+    "/webhook/yoomoney/", summary="Webhook от YooMoney", status_code=status.HTTP_200_OK
+)
 async def yoomoney_webhook(
     notification_type: str = Form(...),
     operation_id: str = Form(...),
@@ -61,7 +111,7 @@ async def yoomoney_webhook(
     codepro: str = Form(...),
     label: str = Form(...),
     sha1_hash: str = Form(...),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
 ):
     # 1. Формируем payload (все значения как строки - как их отправляет YooMoney)
     payload = {
@@ -73,12 +123,13 @@ async def yoomoney_webhook(
         "sender": sender,
         "codepro": codepro,
         "label": label,
-        "sha1_hash": sha1_hash
+        "sha1_hash": sha1_hash,
     }
 
-
     logger.debug(f"[YooMoney Webhook] Received: {payload}")
-    logger.debug(f"[YooMoney Webhook] Secret length: {len(settings.YOOMONEY_NOTIFICATION_SECRET)}")
+    logger.debug(
+        f"[YooMoney Webhook] Secret length: {len(settings.YOOMONEY_NOTIFICATION_SECRET)}"
+    )
 
     # 2. Проверка подписи
     if not await verify_webhook_signature(payload):
@@ -94,9 +145,7 @@ async def yoomoney_webhook(
 
     # 4. Защита от дублирования через Redis
     redis_client = aioredis.Redis(
-        host=settings.DB.REDIS_HOST,
-        port=settings.DB.REDIS_PORT,
-        decode_responses=True
+        host=settings.DB.REDIS_HOST, port=settings.DB.REDIS_PORT, decode_responses=True
     )
 
     try:
@@ -123,7 +172,9 @@ async def yoomoney_webhook(
         except Exception as e:
             await redis_client.delete(key)
             await redis_client.close()
-            raise HTTPException(status_code=500, detail=f"Failed to update balance: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to update balance: {str(e)}"
+            )
 
         await redis_client.close()
         return {"status": "ok"}

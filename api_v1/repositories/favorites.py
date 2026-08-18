@@ -6,12 +6,17 @@ from core.models import Product, favorites_table
 
 
 async def get_favorites(user_id: int, session: AsyncSession):
-    stmt = select(Product.id).join(favorites_table, favorites_table.c.product_id == Product.id).where(favorites_table.c.user_id == user_id)
+    stmt = (
+        select(Product.id)
+        .join(favorites_table, favorites_table.c.product_id == Product.id)
+        .where(favorites_table.c.user_id == user_id)
+    )
     favorites = await session.execute(stmt)
     return favorites.scalars().all()
 
+
 async def add_favorite(user_id: int, product_id: int, session: AsyncSession):
-    stmt =  favorites_table.insert().values(user_id=user_id,product_id=product_id)
+    stmt = favorites_table.insert().values(user_id=user_id, product_id=product_id)
     try:
         await session.execute(stmt)
     except IntegrityError:
@@ -21,7 +26,9 @@ async def add_favorite(user_id: int, product_id: int, session: AsyncSession):
 
 
 async def delete_favorite(user_id: int, product_id: int, session: AsyncSession):
-    stmt = delete(favorites_table).where(favorites_table.c.user_id == user_id,favorites_table.c.product_id == product_id)
+    stmt = delete(favorites_table).where(
+        favorites_table.c.user_id == user_id, favorites_table.c.product_id == product_id
+    )
     result = await session.execute(stmt)
     if result.rowcount == 0:
         await session.rollback()

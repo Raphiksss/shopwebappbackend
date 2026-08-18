@@ -3,9 +3,7 @@ import asyncio
 import subprocess
 import sys
 
-
-
-sys.path.insert(0, '/backend')
+sys.path.insert(0, "/backend")
 
 from core.common import logger
 from sqlalchemy import text
@@ -15,15 +13,16 @@ from core.models.Admin import Admin
 from core.config import settings
 from api_v1.services import auth
 
+
 async def check_db_empty():
     """Check if database has no tables."""
     print(f"DB URL: {settings.DB.db_url}")
     async with engine.connect() as conn:
         db = await conn.execute(text("SELECT current_database()"))
         print(f"Connected to database: {db.scalar()}")
-        tables = await conn.execute(text(
-            "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
-        ))
+        tables = await conn.execute(
+            text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
+        )
         table_list = [row[0] for row in tables]
         print(f"Tables found: {table_list}")
         return len(table_list) == 0
@@ -39,6 +38,7 @@ async def create_tables():
 async def create_initial_admin():
     """Create initial admin if not exists."""
     from sqlalchemy import select
+
     async with AsyncSessionLocal() as session:
         result = await session.execute(select(Admin).limit(1))
         admin = result.scalar_one_or_none()
@@ -47,7 +47,7 @@ async def create_initial_admin():
             username = str(settings.ADMIN_USERNAME)
             password = str(settings.ADMIN_PASSWORD)
             logger.debug(f"username:{username}, password:{password}")
-            await auth.create_admin(username,password,session)
+            await auth.create_admin(username, password, session)
             print(f"Created initial admin: {username}")
         else:
             print("Admin already exists, skipping creation")
@@ -57,9 +57,7 @@ def run_migrations():
     """Run pending alembic migrations."""
     print("Running alembic upgrade head...")
     result = subprocess.run(
-        ['alembic', 'upgrade', 'head'],
-        capture_output=True,
-        text=True
+        ["alembic", "upgrade", "head"], capture_output=True, text=True
     )
     if result.returncode != 0:
         print(f"Migration error: {result.stderr}")
@@ -71,9 +69,7 @@ def stamp_head():
     """Mark all migrations as applied without running them."""
     print("Stamping database with current head...")
     result = subprocess.run(
-        ['alembic', 'stamp', 'head'],
-        capture_output=True,
-        text=True
+        ["alembic", "stamp", "head"], capture_output=True, text=True
     )
     if result.returncode != 0:
         print(f"Stamp error: {result.stderr}")
@@ -98,5 +94,5 @@ async def main():
     print("=== Initialization Complete ===")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

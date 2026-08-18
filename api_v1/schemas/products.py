@@ -10,13 +10,14 @@ class ProductCreate(BaseModel):
     category: str
     product_type: str
 
+
 class ProductUpdateStrings(BaseModel):
-    title: str|None = Field(default=None)
-    description: str|None = Field(default=None)
-    price: int|None = Field(default=None)
-    rating: float|None = Field(default=None)
-    category_title: str|None = Field(default=None)
-    product_type: str|None = Field(default=None)
+    title: str | None = Field(default=None)
+    description: str | None = Field(default=None)
+    price: int | None = Field(default=None)
+    rating: float | None = Field(default=None)
+    category_title: str | None = Field(default=None)
+    product_type: str | None = Field(default=None)
 
     @field_validator("*", mode="before")
     @classmethod
@@ -25,15 +26,16 @@ class ProductUpdateStrings(BaseModel):
             return None
         return v
 
+
 class ProductUpdate(ProductUpdateStrings):
-    image: str|None = Field(default=None)
-    product_data: str|None = Field(default=None)
+    image: str | None = Field(default=None)
+    product_data: str | None = Field(default=None)
 
 
 class ProductRead(BaseModel):
     id: int
     title: str
-    description:str
+    description: str
     price: int
     category_title: str | None
     rating: float
@@ -42,11 +44,12 @@ class ProductRead(BaseModel):
     product_data: str | None
     model_config = ConfigDict(from_attributes=True)
 
+
 class ProductReturn(BaseModel):
-    id:          int
-    title:       str
+    id: int
+    title: str
     description: str
-    price:       int
-    category:    Optional[str]
+    price: int
+    category: Optional[str]
 
     model_config = ConfigDict(from_attributes=True)

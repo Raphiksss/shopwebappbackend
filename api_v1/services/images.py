@@ -10,7 +10,8 @@ from fastapi import UploadFile, HTTPException
 IMAGES_DIR = Path(os.getenv("IMAGES_DIR", "/var/www/media"))
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
-async def upload_image(file:UploadFile):
+
+async def upload_image(file: UploadFile):
     data = await file.read()
     if not data:
         raise HTTPException(status_code=400, detail="Пустой файл")

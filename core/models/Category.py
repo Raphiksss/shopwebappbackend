@@ -9,4 +9,4 @@ if TYPE_CHECKING:
 class Category(Base):
     title: Mapped[str] = mapped_column(unique=True)
     img: Mapped[str]
-    products: Mapped[list["Product"]] = relationship(back_populates = "category")
+    products: Mapped[list["Product"]] = relationship(back_populates="category")

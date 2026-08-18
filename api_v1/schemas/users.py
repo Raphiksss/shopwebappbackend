@@ -1,26 +1,30 @@
-from pydantic import BaseModel, ConfigDict,Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class UserCreate(BaseModel):
     username: str
     tg_id: int
 
+
 class UserRead(BaseModel):
-    id:int
+    id: int
     username: str
     balance: int
     tg_id: int
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class UserPartialUpdate(BaseModel):
-    username:str|None = Field(default = None)
-    balance: int| None = Field(default = None)
+    username: str | None = Field(default=None)
+    balance: int | None = Field(default=None)
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class YooMoneyWebhookPayload(BaseModel):
     """Входящее уведомление от YooMoney"""
+
     notification_type: str
     operation_id: str
     amount: float

@@ -1,5 +1,14 @@
-
-__all__ = ( "Product", "Base", "User", "favorites_table", "Review", "Category", "Order", "Admin","OrdersItem")
+__all__ = (
+    "Product",
+    "Base",
+    "User",
+    "favorites_table",
+    "Review",
+    "Category",
+    "Order",
+    "Admin",
+    "OrdersItem",
+)
 from .Product import Product
 from .Base import Base
 from .Users import User

@@ -10,7 +10,14 @@ from .config import settings
 
 
 class S3Client:
-    def __init__(self, access_key: str, secret_key: str, endpoint: str, bucket_name: str, public_url: str):
+    def __init__(
+        self,
+        access_key: str,
+        secret_key: str,
+        endpoint: str,
+        bucket_name: str,
+        public_url: str,
+    ):
         self.config = {
             "endpoint_url": endpoint,
             "region_name": "auto",
@@ -41,7 +48,9 @@ class S3Client:
             image.load()
             image = ImageOps.exif_transpose(image)
             buffer = BytesIO()
-            fmt = {"image/jpeg": "JPEG", "image/png": "PNG", "image/webp": "WEBP"}[ctype]
+            fmt = {"image/jpeg": "JPEG", "image/png": "PNG", "image/webp": "WEBP"}[
+                ctype
+            ]
             save_kwargs = {"format": fmt}
             if fmt == "JPEG":
                 save_kwargs["quality"] = 95
@@ -56,6 +65,7 @@ class S3Client:
                 ContentType=ctype,
             )
         return f"{self.public_url}/{object_name}"
+
 
 s3 = S3Client(
     access_key=settings.DB.R2_ACCESS_KEY,
