@@ -234,85 +234,10 @@ poetry run black --check .  # проверить без изменений
 
 ### Планы
 
-#### 1. Каскадное удаление и архивация товаров (баг, чиним первым)
-
-Товар нельзя удалить, если он лежит у кого-то в избранном: приходит `IntegrityError` от жёсткой связи, а клиент получает необработанный 500. То же самое с товаром, на который есть отзывы или который попал в заказ, и с категорией, у которой есть товары.
-
-Причина в том, что все внешние ключи созданы автогенерацией Alembic без `ON DELETE`, а у ORM-связей не задано ни `cascade`, ни `passive_deletes`:
-
-| Ключ | Файл | Что происходит при удалении |
-| --- | --- | --- |
-| `favorites.product_id → products.id` | `core/models/Favorites.py` | строки избранного не удаляются, `DELETE` товара падает |
-| `favorites.user_id → users.id` | `core/models/Favorites.py` | то же при удалении пользователя |
-| `reviews.product_id → products.id` | `core/models/Review.py` | колонка `NOT NULL`, а связь по умолчанию пытается занулить FK |
-| `ordersitems.product_id → products.id` | `core/models/Order.py` | то же, плюс удаление разрушило бы историю заказов |
-| `products.category_title → categorys.title` | `core/models/Product.py` | указан только `onupdate="CASCADE"`, удаление категории с товарами падает |
-
-Что делать:
-
-- `ondelete="CASCADE"` на связях-справочниках, которые не жалко терять вместе с товаром: `favorites`, `reviews`. Миграция + `passive_deletes=True` в relationship.
-- Товар, который встречается в заказах, **не удалять физически**: мягкое удаление (`is_active` / `archived_at`), он исчезает с витрины, но история заказов остаётся целой.
-- `ondelete="RESTRICT"` для `ordersitems.product_id` и осмысленный ответ 409 вместо 500.
-- Для категорий: `ondelete="SET NULL"` (товар остаётся без категории) вместо падения.
-- Обработка `IntegrityError` в `repositories/products.py` и `repositories/categories.py`, чтобы наружу уходил понятный код ошибки, а не трассировка.
-
-#### 2. Перестройка авторизации
-
-Схема одна для всех клиентов: **серверные (stateful) сессии с хранением в БД**. Никаких stateless-токенов (JWT), потому что они живут до истечения срока и отозвать их нельзя. В cookie уезжает только непредсказуемый идентификатор сессии, всё состояние лежит в базе, поэтому доступ отзывается мгновенно удалением записи.
-
-Сейчас работает противоположное: `SessionMiddleware` кладёт состояние в подписанную cookie, то есть сессия живёт на клиенте и сервер не может её погасить до истечения `SESSION_EXPIRE_TIME`.
-
-**Хранилище сессий.** Таблица `sessions`:
-
-| Поле | Зачем |
-| --- | --- |
-| `id` | первичный ключ |
-| `token_hash` | SHA-256 от токена из cookie, сам токен в БД не хранится |
-| `subject_type`, `subject_id` | `admin` / `user` и ссылка на владельца |
-| `created_at`, `expires_at`, `last_seen_at` | срок жизни и sliding expiration |
-| `revoked_at` | мгновенный отзыв без удаления истории |
-| `ip`, `user_agent` | чтобы админ видел свои устройства и чужие входы |
-
-**Поток запроса.** Зависимость вместо `check_if_auth`: берём токен из httpOnly cookie, считаем хеш, ищем сессию, проверяем `expires_at` и `revoked_at`, подтягиваем роль, обновляем `last_seen_at`. Кеш здесь не нужен: админов 2-3, выборка по уникальному индексу `token_hash` дешевле, чем инвалидация кеша при отзыве, а любой кеш с TTL как раз и сломал бы мгновенность отзыва.
-
-**Что это даёт по контролю:**
-
-- `DELETE /auth/sessions/{id}/` для одной сессии и «выйти на всех устройствах» для всех.
-- Автоматический отзыв всех сессий админа при смене пароля и при его удалении или деактивации.
-- Список активных сессий в админке: устройство, IP, время последней активности.
-- Ротация токена при входе, чтобы закрыть session fixation.
-
-**Клиент (Mini App)** получает такую же серверную сессию вместо `tg_id` в пути:
-
-- `POST /auth/telegram/` принимает `initData` из `window.Telegram.WebApp`, проверяет подпись HMAC-SHA256 от `BOT_TOKEN` и свежесть `auth_date`.
-- После проверки пользователь создаётся или находится по `tg_id`, создаётся сессия, клиент дальше работает по cookie и `initData` не пересылает.
-- `tg_id` и `user_id` берутся из сессии: `/cart/{tg_id}/`, `/favorites/{tg_id}/`, `POST /orders/` теряют параметр и работают только со своими данными. Это закрывает доступ к чужим корзинам, избранному, заказам и балансу.
-- Вебхуки платёжек остаются вне сессий и проверяются подписью провайдера.
-- Пополнение баланса только по подтверждённому платежу, публичные `replenisment`-эндпоинты убираются.
-
-Плюс общая обвязка: httpOnly + `Secure` + `SameSite`, CSRF-токен на изменяющие запросы, rate limit и блокировка после серии неудачных входов, аудит-лог действий администратора.
-
-Что учесть при реализации: витрина и API живут на разных хостах, поэтому cookie для Mini App кросс-сайтовая и требует `Secure` + `SameSite=None` (`allow_credentials=True` в CORS уже стоит). В WebView Telegram это работает, но ограничения на сторонние cookie в некоторых клиентах стоит проверить на реальных устройствах до перевода витрины на сессии.
-
-#### 3. Улучшение архитектуры
-
-- Разнести API, polling бота и consumers по отдельным процессам/контейнерам, чтобы масштабировать API воркерами.
-- Убрать блокирующий I/O: `redis.asyncio` с общим пулом, `aiohttp`/`httpx` вместо `requests`, bcrypt в thread pool.
-- Единая транзакционная граница на запрос (session-per-request + commit в одном месте), заказ создаётся атомарно, баланс списывается с `SELECT ... FOR UPDATE`.
-- Outbox-паттерн для публикации в RabbitMQ, чтобы сообщение уходило только после коммита транзакции.
-- Нормализация схемы: `category_id` вместо `category_title`, `user_id` вместо `tg_id` в заказах, `quantity` и `price_at_purchase` в `OrdersItem`, `created_at`/`updated_at` во всех моделях, рейтинг как агрегат отзывов.
-- Одно хранилище файлов (R2) за интерфейсом, локальный путь только для dev, домены из конфига.
-- Чистые слои view → service → repository, вынос платежных провайдеров за общий интерфейс.
-- Пагинация, фильтры и сортировка в каталоге.
-- Тесты (pytest + httpx + testcontainers), линтеры и type-check в CI, `.dockerignore`, non-root контейнер.
-
-#### 4. Кеширование
-
-- Кеш каталога и категорий в Redis с инвалидацией при изменении товара, вместо чтения из PostgreSQL на каждый запрос витрины.
-- Кеш детальной карточки товара и рантайм-настроек магазина, чтобы `GET /settings/*` не ходил в Redis по одному ключу за раз.
-- ETag / `Cache-Control` для витринных GET-эндпоинтов и CDN-кеш для изображений.
-- Общий connection pool и единый слой доступа к кешу, вместо ручного `redis.Redis(...)` в каждой функции.
-- Защита от cache stampede на популярных товарах, метрики hit/miss.
+1. **Каскадное удаление товаров** (баг, чиним первым). Товар не удаляется, если он лежит у кого-то в избранном, имеет отзывы или попал в заказ.
+2. **Перестройка авторизации.** Серверные сессии в БД вместо подписанной cookie, чтобы админа можно было отозвать мгновенно, и авторизация клиента вместо `tg_id` в пути.
+3. **Улучшение архитектуры.** Разделение API, бота и consumers по процессам, атомарное создание заказа, нормализация схемы.
+4. **Кеширование.** Кеш каталога в Redis и общий пул подключений вместо нового клиента на каждый запрос.
 
 </details>
 
@@ -545,84 +470,9 @@ An honest list, and the basis for the roadmap below.
 
 ### Roadmap
 
-#### 1. Cascading deletes and product archiving (bug, fixed first)
-
-A product cannot be deleted while it sits in someone's favorites: the hard FK raises `IntegrityError` and the client gets an unhandled 500. The same happens for a product that has reviews or appears in an order, and for a category that still has products.
-
-The cause is that every foreign key came from Alembic autogeneration without `ON DELETE`, and the ORM relationships declare neither `cascade` nor `passive_deletes`:
-
-| Key | File | What happens on delete |
-| --- | --- | --- |
-| `favorites.product_id → products.id` | `core/models/Favorites.py` | favorite rows stay, the product `DELETE` fails |
-| `favorites.user_id → users.id` | `core/models/Favorites.py` | same when deleting a user |
-| `reviews.product_id → products.id` | `core/models/Review.py` | the column is `NOT NULL` while the default relationship tries to nullify the FK |
-| `ordersitems.product_id → products.id` | `core/models/Order.py` | same, and deleting would destroy order history |
-| `products.category_title → categorys.title` | `core/models/Product.py` | only `onupdate="CASCADE"` is set, so deleting a category with products fails |
-
-The plan:
-
-- `ondelete="CASCADE"` for dependent rows that should disappear with the product: `favorites`, `reviews`. Migration plus `passive_deletes=True` on the relationship.
-- A product referenced by orders must **never be hard-deleted**: soft delete (`is_active` / `archived_at`) removes it from the storefront while order history stays intact.
-- `ondelete="RESTRICT"` for `ordersitems.product_id` and a meaningful 409 instead of a 500.
-- For categories: `ondelete="SET NULL"` (the product survives without a category) instead of failing.
-- Handle `IntegrityError` in `repositories/products.py` and `repositories/categories.py` so callers get a proper status code rather than a traceback.
-
-#### 2. Auth rebuild
-
-One scheme for every client: **server-side (stateful) sessions stored in the database**. No stateless tokens (JWT), because they stay valid until they expire and cannot be revoked. The cookie carries nothing but an unpredictable session id, all state lives in the DB, so access is revoked instantly by deleting the record.
-
-Today it works the other way around: `SessionMiddleware` puts the state into a signed cookie, so the session lives on the client and the server cannot kill it before `SESSION_EXPIRE_TIME` runs out.
-
-**Session store.** A `sessions` table:
-
-| Column | Purpose |
-| --- | --- |
-| `id` | primary key |
-| `token_hash` | SHA-256 of the cookie token; the token itself is never stored |
-| `subject_type`, `subject_id` | `admin` / `user` plus a reference to the owner |
-| `created_at`, `expires_at`, `last_seen_at` | lifetime and sliding expiration |
-| `revoked_at` | instant revocation without losing history |
-| `ip`, `user_agent` | so an admin can see their devices and spot foreign logins |
-
-**Request flow.** A dependency replacing `check_if_auth`: read the token from the httpOnly cookie, hash it, look the session up, check `expires_at` and `revoked_at`, load the role, refresh `last_seen_at`. No cache here: there are 2-3 admins, a lookup on the unique `token_hash` index is cheaper than invalidating a cache on revocation, and any TTL-based cache would break the instant revocation we are building this for.
-
-**What this buys in terms of control:**
-
-- `DELETE /auth/sessions/{id}/` for a single session and "log out everywhere" for all of them.
-- Automatic revocation of every admin session on password change and on admin deletion or deactivation.
-- A list of active sessions in the admin panel: device, IP, last activity.
-- Token rotation on login to close session fixation.
-
-**The client (Mini App)** gets the same server-side session instead of `tg_id` in the path:
-
-- `POST /auth/telegram/` takes `initData` from `window.Telegram.WebApp`, verifies the HMAC-SHA256 signature derived from `BOT_TOKEN` and checks `auth_date` freshness.
-- On success the user is created or looked up by `tg_id`, a session is created, and from then on the client works purely on the cookie and stops resending `initData`.
-- `tg_id` and `user_id` come from the session: `/cart/{tg_id}/`, `/favorites/{tg_id}/` and `POST /orders/` lose the parameter and can only touch the caller's own data. That closes access to other users' carts, favorites, orders and balances.
-- Payment webhooks stay outside the session layer and are verified by provider signature.
-- Top up the balance only from a confirmed payment; drop the public `replenisment` endpoints.
-
-Plus the shared hardening: httpOnly + `Secure` + `SameSite`, a CSRF token on mutating requests, rate limiting and lockout after repeated failed logins, and an audit log of admin actions.
-
-Implementation note: the storefront and the API live on different hosts, so the Mini App cookie is cross-site and needs `Secure` + `SameSite=None` (CORS already sets `allow_credentials=True`). This works inside the Telegram WebView, but third-party cookie restrictions in some clients should be verified on real devices before moving the storefront onto sessions.
-
-#### 3. Architecture improvements
-
-- Split the API, bot polling and consumers into separate processes/containers so the API can scale with workers.
-- Remove blocking I/O: `redis.asyncio` with a shared pool, `aiohttp`/`httpx` instead of `requests`, bcrypt in a thread pool.
-- One transaction boundary per request (session-per-request with a single commit point), atomic order creation, balance debited with `SELECT ... FOR UPDATE`.
-- Outbox pattern for RabbitMQ publishing so messages leave only after the transaction commits.
-- Schema normalization: `category_id` instead of `category_title`, `user_id` instead of `tg_id` on orders, `quantity` and `price_at_purchase` on `OrdersItem`, `created_at`/`updated_at` everywhere, rating aggregated from reviews.
-- A single file storage (R2) behind an interface, local paths for dev only, domains from config.
-- Clean view → service → repository layering, payment providers behind a shared interface.
-- Pagination, filtering and sorting in the catalog.
-- Tests (pytest + httpx + testcontainers), linters and type checks in CI, a `.dockerignore`, a non-root container.
-
-#### 4. Caching
-
-- Cache the catalog and categories in Redis with invalidation on product changes, instead of hitting PostgreSQL on every storefront request.
-- Cache product detail pages and runtime shop settings so `GET /settings/*` stops fetching one Redis key at a time.
-- ETag / `Cache-Control` for storefront GET endpoints and CDN caching for images.
-- A shared connection pool and a single cache access layer instead of a manual `redis.Redis(...)` in every function.
-- Cache stampede protection for hot products, plus hit/miss metrics.
+1. **Cascading product deletes** (bug, fixed first). A product cannot be deleted while it sits in someone's favorites, has reviews, or appears in an order.
+2. **Auth rebuild.** Server-side sessions in the database instead of a signed cookie, so an admin can be revoked instantly, plus real client auth instead of `tg_id` in the path.
+3. **Architecture improvements.** Split the API, bot and consumers into separate processes, make order creation atomic, normalize the schema.
+4. **Caching.** Redis cache for the catalog and a shared connection pool instead of a new client per request.
 
 </details>
