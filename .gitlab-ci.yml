@@ -28,13 +28,10 @@ deploy:
       EOF
 
 
-    # Даем права на скрипты
     - chmod +x scripts/entrypoint.sh
 
-    # Останавливаем старые контейнеры
     - docker compose down || true
 
-    # Запускаем новые контейнеры
     - docker compose up -d --build --force-recreate
   only:
     - main

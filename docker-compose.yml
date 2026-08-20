@@ -39,14 +39,14 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:5672:5672"
-      - "15672:15672"
+      - "127.0.0.1:15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin123
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -62,7 +62,7 @@ services:
     volumes:
       - "postgresql-data:/var/lib/postgresql/data"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres && psql -U postgres -c 'SELECT 1'"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres && psql -U postgres -c 'SELECT 1'" ]
       interval: 5s
       timeout: 5s
       retries: 5
