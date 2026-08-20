@@ -5,7 +5,6 @@ import sys
 
 sys.path.insert(0, "/backend")
 
-from core.common import logger
 from sqlalchemy import text
 from core.db_helper import engine, AsyncSessionLocal
 from core.models.Base import Base
@@ -16,7 +15,7 @@ from api_v1.services import auth
 
 async def check_db_empty():
     """Check if database has no tables."""
-    print(f"DB URL: {settings.DB.db_url}")
+    print(f"DB NAME: {settings.DB.DB_NAME}")
     async with engine.connect() as conn:
         db = await conn.execute(text("SELECT current_database()"))
         print(f"Connected to database: {db.scalar()}")
@@ -46,7 +45,6 @@ async def create_initial_admin():
         if admin is None:
             username = str(settings.ADMIN_USERNAME)
             password = str(settings.ADMIN_PASSWORD)
-            logger.debug(f"username:{username}, password:{password}")
             await auth.create_admin(username, password, session)
             print(f"Created initial admin: {username}")
         else:

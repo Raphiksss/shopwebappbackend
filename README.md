@@ -104,10 +104,9 @@ scripts/          entrypoint.sh, init_db.py, init_minio.sh
 
 ### Запуск
 
-#### Docker (рекомендуется)
+Проект запускается только через Docker: хосты сервисов и путь к каталогу с картинками заданы в Compose, а запуск из хостовой системы не поддерживается.
 
 ```bash
-cp .env.example .env   # файла пока нет, переменные см. в таблице ниже
 docker compose up -d --build
 docker compose logs -f backend
 ```
@@ -118,18 +117,11 @@ docker compose logs -f backend
 
 Все порты, кроме UI RabbitMQ на сервере, привязаны к `127.0.0.1`, поэтому с удалённой машины панель открывается только через туннель: `ssh -L 15672:127.0.0.1:15672 user@server`.
 
-#### Локально
-
-```bash
-poetry install
-docker compose up -d postgresql redis rabbitmq
-alembic upgrade head
-poetry run python main.py
-```
-
 #### Переменные окружения
 
-Обязательные:
+Конфигурация разложена по трём местам, приоритет справа налево: дефолты в `core/config.py` → `.env` → `environment` в `docker-compose.yml`.
+
+**Из `.env`**, который лежит рядом с `docker-compose.yml`. На сервере его генерирует CI из переменных GitLab, локально пишется руками. В образ он не попадает, `.env` указан в `.dockerignore`. Все переменные ниже обязательные, без дефолтов, поэтому при отсутствии любой из них приложение падает на старте:
 
 | Переменная | Назначение |
 | --- | --- |
@@ -139,21 +131,28 @@ poetry run python main.py
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | первый админ, создаётся `scripts/init_db.py` |
 | `SECRET_SESSION_KEY` | ключ подписи cookie-сессий |
 | `YOOMONEY_TOKEN`, `YOOMONEY_WALLET`, `YOOMONEY_NOTIFICATION_SECRET` | реквизиты ЮMoney |
+| `R2_ACCESS_KEY`, `R2_SECRET_KEY`, `R2_ENDPOINT`, `R2_PUBLIC_URL` | доступ к Cloudflare R2 |
 | `DB_PASSWORD` | пароль пользователя PostgreSQL |
+| `RABBITMQ_USER`, `RABBITMQ_PASSWORD` | доступ к RabbitMQ |
 
-Опциональные:
+**Из `docker-compose.yml`**, это топология сети Compose, в `.env` их дублировать не нужно (секция `environment` всё равно перекроет файл):
+
+| Переменная | Значение |
+| --- | --- |
+| `DB_HOST`, `DB_PORT` | `postgresql`, `5432` |
+| `REDIS_HOST`, `REDIS_PORT` | `redis`, `6379` |
+| `RABBITMQ_HOST`, `RABBITMQ_PORT` | `rabbitmq`, `5672` |
+
+**С дефолтами в конфиге**, задавать только если нужно поменять:
 
 | Переменная | По умолчанию |
 | --- | --- |
-| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_NAME` | `localhost`, `5432`, `postgres`, `postgres` |
-| `REDIS_HOST`, `REDIS_PORT` | `localhost`, `6379` |
-| `RABBITMQ_HOST`, `RABBITMQ_PORT`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD` | `localhost`, `5672`, `admin`, `admin123` |
-| `R2_ACCESS_KEY`, `R2_SECRET_KEY`, `R2_ENDPOINT`, `R2_PUBLIC_URL` | пустые |
+| `DB_USER`, `DB_NAME` | `postgres`, `postgres` |
 | `IMAGES_DIR` | `/var/www/media` |
 | `SESSION_EXPIRE_TIME`, `SESSION_SECURE` | `86400`, `true` |
-| `logging_level`, `host`, `port` | `INFO`, `localhost`, `8000` |
+| `logging_level` | `INFO` |
 
-Строка подключения к БД собирается из `DB_*` в `core/config.py`, отдельной переменной с готовым URL нет. Внутри Compose `DB_HOST` и `DB_PORT` заданы в `environment` у сервиса `backend`, остальное приходит из `.env`, который на сервере генерирует CI из переменных GitLab.
+Строка подключения к БД собирается из `DB_*` в `core/config.py`, отдельной переменной с готовым URL нет. `DB_USER`, `DB_NAME`, `POSTGRES_USER`, `POSTGRES_PASSWORD` и `POSTGRES_DB` должны совпадать между приложением и сервисом `postgresql`, иначе подключения не будет.
 
 ### API
 
@@ -173,16 +172,16 @@ poetry run python main.py
 ### Миграции
 
 ```bash
-alembic revision --autogenerate -m "описание"
-alembic upgrade head
-alembic downgrade -1
+docker compose exec backend alembic revision --autogenerate -m "описание"
+docker compose exec backend alembic upgrade head
+docker compose exec backend alembic downgrade -1
 ```
 
 ### Формат кода
 
 ```bash
-poetry run black .          # отформатировать
-poetry run black --check .  # проверить без изменений
+docker compose exec backend black .          # отформатировать
+docker compose exec backend black --check .  # проверить без изменений
 ```
 
 В PyCharm: `Settings → Tools → Black` (включить) и `Settings → Tools → Actions on Save → Reformat code`.
@@ -195,8 +194,6 @@ poetry run black --check .  # проверить без изменений
 
 - **Публичные эндпоинты не проверяют, кто их вызывает.** `tg_id` приходит параметром пути, поэтому любой человек может прочитать и изменить чужую корзину и избранное, создать заказ за другого пользователя и списать его баланс, запросить `GET /users/` со списком всех пользователей. Подпись `initData` из Telegram Web App нигде не валидируется.
 - **Пополнение баланса вызывается напрямую.** `POST /users/replenisment/*` принимает произвольные `tg_id` и `amount` без авторизации.
-- **Дефолтные секреты в репозитории**: `admin/admin123` для RabbitMQ остались дефолтами полей в `core/config.py` и захардкожены в `docker-compose.yml`. Реквизиты PostgreSQL уже переехали в `DB_*` переменные, RabbitMQ стоит убрать туда же, без фолбэка в коде.
-- **Дефолты RabbitMQ остались в коде**: `RABBITMQ_USER` и `RABBITMQ_PASSWORD` в `core/config.py` по-прежнему падают на `admin` / `admin123`, если переменная не задана. Стоит сделать их обязательными, как `DB_PASSWORD`.
 - **Сессию админа нельзя отозвать.** `SessionMiddleware` хранит состояние в подписанной cookie на клиенте, серверной записи о сессии нет. Удаление админа, смена пароля и утечка cookie не выкидывают его из системы: доступ живёт до истечения `SESSION_EXPIRE_TIME`, то есть сутки.
 - **Нет CSRF-защиты и rate limit** для cookie-сессий и `POST /auth/login/`, `same_site` для `SessionMiddleware` не задан.
 - **Токены хранятся в Redis в открытом виде**, а `GET /settings/bot_token/` возвращает токен бота.
@@ -345,10 +342,9 @@ scripts/          entrypoint.sh, init_db.py, init_minio.sh
 
 ### Getting started
 
-#### Docker (recommended)
+The project runs only through Docker: service hosts and the media directory path are set in Compose, and running from the host system is not supported.
 
 ```bash
-cp .env.example .env   # no such file yet, see the variables table below
 docker compose up -d --build
 docker compose logs -f backend
 ```
@@ -359,18 +355,11 @@ docker compose logs -f backend
 
 Every port is bound to `127.0.0.1`, so on a remote server the management UI is only reachable through a tunnel: `ssh -L 15672:127.0.0.1:15672 user@server`.
 
-#### Local
-
-```bash
-poetry install
-docker compose up -d postgresql redis rabbitmq
-alembic upgrade head
-poetry run python main.py
-```
-
 #### Environment variables
 
-Required:
+Configuration is split across three places, priority right to left: defaults in `core/config.py` → `.env` → `environment` in `docker-compose.yml`.
+
+**From `.env`**, which sits next to `docker-compose.yml`. On the server CI generates it from GitLab variables, locally it is written by hand. It never enters the image, `.env` is listed in `.dockerignore`. All variables below are required, with no defaults, so the app crashes on startup if any is missing:
 
 | Variable | Purpose |
 | --- | --- |
@@ -380,21 +369,28 @@ Required:
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | first admin, created by `scripts/init_db.py` |
 | `SECRET_SESSION_KEY` | cookie session signing key |
 | `YOOMONEY_TOKEN`, `YOOMONEY_WALLET`, `YOOMONEY_NOTIFICATION_SECRET` | YooMoney credentials |
+| `R2_ACCESS_KEY`, `R2_SECRET_KEY`, `R2_ENDPOINT`, `R2_PUBLIC_URL` | Cloudflare R2 access |
 | `DB_PASSWORD` | PostgreSQL user password |
+| `RABBITMQ_USER`, `RABBITMQ_PASSWORD` | RabbitMQ credentials |
 
-Optional:
+**From `docker-compose.yml`**, this is Compose network topology, no need to duplicate them in `.env` (the `environment` section overrides the file anyway):
+
+| Variable | Value |
+| --- | --- |
+| `DB_HOST`, `DB_PORT` | `postgresql`, `5432` |
+| `REDIS_HOST`, `REDIS_PORT` | `redis`, `6379` |
+| `RABBITMQ_HOST`, `RABBITMQ_PORT` | `rabbitmq`, `5672` |
+
+**With defaults in the config**, set only if you need to change them:
 
 | Variable | Default |
 | --- | --- |
-| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_NAME` | `localhost`, `5432`, `postgres`, `postgres` |
-| `REDIS_HOST`, `REDIS_PORT` | `localhost`, `6379` |
-| `RABBITMQ_HOST`, `RABBITMQ_PORT`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD` | `localhost`, `5672`, `admin`, `admin123` |
-| `R2_ACCESS_KEY`, `R2_SECRET_KEY`, `R2_ENDPOINT`, `R2_PUBLIC_URL` | empty |
+| `DB_USER`, `DB_NAME` | `postgres`, `postgres` |
 | `IMAGES_DIR` | `/var/www/media` |
 | `SESSION_EXPIRE_TIME`, `SESSION_SECURE` | `86400`, `true` |
-| `logging_level`, `host`, `port` | `INFO`, `localhost`, `8000` |
+| `logging_level` | `INFO` |
 
-The DB connection string is assembled from the `DB_*` variables in `core/config.py`; there is no single ready-made URL variable. Inside Compose, `DB_HOST` and `DB_PORT` are set in the `backend` service `environment`, while the rest comes from `.env`, which CI generates on the server from the GitLab variables.
+The DB connection string is assembled from the `DB_*` variables in `core/config.py`; there is no single ready-made URL variable. `DB_USER`, `DB_NAME`, `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` must match between the app and the `postgresql` service, otherwise the connection will fail.
 
 ### API
 
@@ -414,16 +410,16 @@ Everything lives under `/api/v1`. Full reference at `/docs`.
 ### Migrations
 
 ```bash
-alembic revision --autogenerate -m "message"
-alembic upgrade head
-alembic downgrade -1
+docker compose exec backend alembic revision --autogenerate -m "message"
+docker compose exec backend alembic upgrade head
+docker compose exec backend alembic downgrade -1
 ```
 
 ### Code style
 
 ```bash
-poetry run black .          # format
-poetry run black --check .  # check without writing
+docker compose exec backend black .          # format
+docker compose exec backend black --check .  # check without writing
 ```
 
 In PyCharm: `Settings → Tools → Black` (enable) and `Settings → Tools → Actions on Save → Reformat code`.
@@ -436,8 +432,6 @@ An honest list, and the basis for the roadmap below.
 
 - **Public endpoints do not verify the caller.** `tg_id` arrives as a path parameter, so anyone can read and modify another user's cart and favorites, place an order on their behalf and drain their balance, or call `GET /users/` for the full user list. Telegram Web App `initData` is never validated.
 - **Balance top-up is directly callable.** `POST /users/replenisment/*` accepts arbitrary `tg_id` and `amount` with no authorization.
-- **Default secrets committed to the repo**: `admin/admin123` for RabbitMQ is still the field default in `core/config.py` and hardcoded in `docker-compose.yml`. PostgreSQL credentials already moved to the `DB_*` variables; RabbitMQ should follow, with no fallback left in code.
-- **RabbitMQ defaults still live in code**: `RABBITMQ_USER` and `RABBITMQ_PASSWORD` in `core/config.py` still fall back to `admin` / `admin123` when the variable is missing. They should become required, like `DB_PASSWORD`.
 - **An admin session cannot be revoked.** `SessionMiddleware` keeps the state in a signed cookie on the client, with no server-side session record. Deleting an admin, changing a password or leaking the cookie does not log anyone out: access survives until `SESSION_EXPIRE_TIME` elapses, which is a full day.
 - **No CSRF protection or rate limiting** for cookie sessions and `POST /auth/login/`; `same_site` is not configured for `SessionMiddleware`.
 - **Tokens are stored in Redis in plaintext**, and `GET /settings/bot_token/` returns the bot token.

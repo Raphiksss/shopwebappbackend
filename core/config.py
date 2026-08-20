@@ -5,9 +5,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DB_Settings(BaseSettings):
+    DB_HOST: str
+    DB_PORT: int
     DB_NAME: str = Field("postgres", validation_alias="DB_NAME")
-    DB_HOST: str = Field("localhost", validation_alias="DB_HOST")
-    DB_PORT: int = Field(5432, validation_alias="DB_PORT")
     DB_USER: str = Field("postgres", validation_alias="DB_USER")
     DB_PASSWORD: str
 
@@ -18,18 +18,18 @@ class DB_Settings(BaseSettings):
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 
-    R2_ACCESS_KEY: str = Field("", validation_alias="R2_ACCESS_KEY")
-    R2_SECRET_KEY: str = Field("", validation_alias="R2_SECRET_KEY")
-    R2_ENDPOINT: str = Field("", validation_alias="R2_ENDPOINT")
-    R2_PUBLIC_URL: str = Field("", validation_alias="R2_PUBLIC_URL")
+    R2_ACCESS_KEY: str
+    R2_SECRET_KEY: str
+    R2_ENDPOINT: str
+    R2_PUBLIC_URL: str
 
-    REDIS_HOST: str = Field("localhost", validation_alias="REDIS_HOST")
-    REDIS_PORT: int = Field(6379, validation_alias="REDIS_PORT")
+    REDIS_HOST: str
+    REDIS_PORT: int
 
-    RABBITMQ_HOST: str = Field("localhost", validation_alias="RABBITMQ_HOST")
-    RABBITMQ_PORT: int = Field(5672, validation_alias="RABBITMQ_PORT")
-    RABBITMQ_USER: str = Field("admin", validation_alias="RABBITMQ_USER")
-    RABBITMQ_PASSWORD: str = Field("admin123", validation_alias="RABBITMQ_PASSWORD")
+    RABBITMQ_HOST: str
+    RABBITMQ_PORT: int
+    RABBITMQ_USER: str
+    RABBITMQ_PASSWORD: str
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -46,20 +46,18 @@ class BOT_Settings(BaseSettings):
 
 
 class Settings(BaseSettings):
-    host: str = "localhost"
-    port: int = 8000
     logging_level: str = "INFO"
     origins: List[str] = [
         "http://localhost:5173",
         "http://10.177.93.85:5173",
         "https://redstoreapp.com",
     ]
-    ADMIN_USERNAME: str = Field(alias="ADMIN_USERNAME")
-    ADMIN_PASSWORD: str = Field(alias="ADMIN_PASSWORD")
-    YOOMONEY_TOKEN: str = Field(alias="YOOMONEY_TOKEN")
-    YOOMONEY_WALLET: str = Field(alias="YOOMONEY_WALLET")
-    YOOMONEY_NOTIFICATION_SECRET: str = Field(alias="YOOMONEY_NOTIFICATION_SECRET")
-    SECRET_SESSION_KEY: str = Field(alias="SECRET_SESSION_KEY")
+    ADMIN_USERNAME: str
+    ADMIN_PASSWORD: str
+    YOOMONEY_TOKEN: str
+    YOOMONEY_WALLET: str
+    YOOMONEY_NOTIFICATION_SECRET: str
+    SECRET_SESSION_KEY: str
     SESSION_EXPIRE_TIME: int = 24 * 60 * 60
     SESSION_SECURE: bool = True
     DB: DB_Settings = DB_Settings()
