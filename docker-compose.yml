@@ -18,12 +18,13 @@ services:
       postgresql:
         condition: service_healthy
     environment:
+      DB_HOST: postgresql
+      DB_PORT: 5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USER: admin
-      RABBITMQ_PASSWORD: admin123
+
 
 
   redis:
@@ -41,8 +42,8 @@ services:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: admin123
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -55,14 +56,16 @@ services:
   postgresql:
     image: postgres:alpine
     ports:
-      - "127.0.0.1:5433:5432"
+      - "127.0.0.1:5432:5432"
     environment:
-      POSTGRES_PASSWORD: password123
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
       PGDATA: /var/lib/postgresql/data
     volumes:
       - "postgresql-data:/var/lib/postgresql/data"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres && psql -U postgres -c 'SELECT 1'" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} && psql -U ${DB_USER} -c 'SELECT 1'" ]
       interval: 5s
       timeout: 5s
       retries: 5

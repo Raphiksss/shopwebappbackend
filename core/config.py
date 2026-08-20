@@ -5,7 +5,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DB_Settings(BaseSettings):
-    db_url: str = "postgresql+asyncpg://postgres:password123@postgresql:5432/postgres"
+    DB_NAME: str = Field("postgres", validation_alias="DB_NAME")
+    DB_HOST: str = Field("localhost", validation_alias="DB_HOST")
+    DB_PORT: int = Field(5432, validation_alias="DB_PORT")
+    DB_USER: str = Field("postgres", validation_alias="DB_USER")
+    DB_PASSWORD: str
+
+    @property
+    def db_url(self) -> str:
+        return (
+            f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}"
+            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        )
 
     R2_ACCESS_KEY: str = Field("", validation_alias="R2_ACCESS_KEY")
     R2_SECRET_KEY: str = Field("", validation_alias="R2_SECRET_KEY")
@@ -20,7 +31,7 @@ class DB_Settings(BaseSettings):
     RABBITMQ_USER: str = Field("admin", validation_alias="RABBITMQ_USER")
     RABBITMQ_PASSWORD: str = Field("admin123", validation_alias="RABBITMQ_PASSWORD")
 
-    model_config = SettingsConfigDict(extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 class BOT_Settings(BaseSettings):

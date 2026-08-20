@@ -114,7 +114,9 @@ docker compose logs -f backend
 
 - API: http://localhost:8000
 - Swagger: http://localhost:8000/docs
-- RabbitMQ UI: http://localhost:15672 (admin / admin123)
+- RabbitMQ UI: http://localhost:15672, логин и пароль из `RABBITMQ_USER` / `RABBITMQ_PASSWORD`
+
+Все порты, кроме UI RabbitMQ на сервере, привязаны к `127.0.0.1`, поэтому с удалённой машины панель открывается только через туннель: `ssh -L 15672:127.0.0.1:15672 user@server`.
 
 #### Локально
 
@@ -137,18 +139,21 @@ poetry run python main.py
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | первый админ, создаётся `scripts/init_db.py` |
 | `SECRET_SESSION_KEY` | ключ подписи cookie-сессий |
 | `YOOMONEY_TOKEN`, `YOOMONEY_WALLET`, `YOOMONEY_NOTIFICATION_SECRET` | реквизиты ЮMoney |
+| `DB_PASSWORD` | пароль пользователя PostgreSQL |
 
 Опциональные:
 
 | Переменная | По умолчанию |
 | --- | --- |
-| `db_url` | строка подключения захардкожена в `core/config.py` |
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_NAME` | `localhost`, `5432`, `postgres`, `postgres` |
 | `REDIS_HOST`, `REDIS_PORT` | `localhost`, `6379` |
 | `RABBITMQ_HOST`, `RABBITMQ_PORT`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD` | `localhost`, `5672`, `admin`, `admin123` |
 | `R2_ACCESS_KEY`, `R2_SECRET_KEY`, `R2_ENDPOINT`, `R2_PUBLIC_URL` | пустые |
 | `IMAGES_DIR` | `/var/www/media` |
 | `SESSION_EXPIRE_TIME`, `SESSION_SECURE` | `86400`, `true` |
 | `logging_level`, `host`, `port` | `INFO`, `localhost`, `8000` |
+
+Строка подключения к БД собирается из `DB_*` в `core/config.py`, отдельной переменной с готовым URL нет. Внутри Compose `DB_HOST` и `DB_PORT` заданы в `environment` у сервиса `backend`, остальное приходит из `.env`, который на сервере генерирует CI из переменных GitLab.
 
 ### API
 
@@ -190,8 +195,8 @@ poetry run black --check .  # проверить без изменений
 
 - **Публичные эндпоинты не проверяют, кто их вызывает.** `tg_id` приходит параметром пути, поэтому любой человек может прочитать и изменить чужую корзину и избранное, создать заказ за другого пользователя и списать его баланс, запросить `GET /users/` со списком всех пользователей. Подпись `initData` из Telegram Web App нигде не валидируется.
 - **Пополнение баланса вызывается напрямую.** `POST /users/replenisment/*` принимает произвольные `tg_id` и `amount` без авторизации.
-- **Дефолтные секреты в репозитории**: `admin/admin123` для RabbitMQ (в `core/config.py` и `docker-compose.yml`), `password123` для PostgreSQL, готовая строка подключения к БД в `core/config.py`.
-- **Порт RabbitMQ Management открыт наружу** (`"15672:15672"`), в отличие от остальных сервисов, привязанных к `127.0.0.1`, и с дефолтным паролем.
+- **Дефолтные секреты в репозитории**: `admin/admin123` для RabbitMQ остались дефолтами полей в `core/config.py` и захардкожены в `docker-compose.yml`. Реквизиты PostgreSQL уже переехали в `DB_*` переменные, RabbitMQ стоит убрать туда же, без фолбэка в коде.
+- **Дефолты RabbitMQ остались в коде**: `RABBITMQ_USER` и `RABBITMQ_PASSWORD` в `core/config.py` по-прежнему падают на `admin` / `admin123`, если переменная не задана. Стоит сделать их обязательными, как `DB_PASSWORD`.
 - **Сессию админа нельзя отозвать.** `SessionMiddleware` хранит состояние в подписанной cookie на клиенте, серверной записи о сессии нет. Удаление админа, смена пароля и утечка cookie не выкидывают его из системы: доступ живёт до истечения `SESSION_EXPIRE_TIME`, то есть сутки.
 - **Нет CSRF-защиты и rate limit** для cookie-сессий и `POST /auth/login/`, `same_site` для `SessionMiddleware` не задан.
 - **Токены хранятся в Redis в открытом виде**, а `GET /settings/bot_token/` возвращает токен бота.
@@ -350,7 +355,9 @@ docker compose logs -f backend
 
 - API: http://localhost:8000
 - Swagger: http://localhost:8000/docs
-- RabbitMQ UI: http://localhost:15672 (admin / admin123)
+- RabbitMQ UI: http://localhost:15672, credentials from `RABBITMQ_USER` / `RABBITMQ_PASSWORD`
+
+Every port is bound to `127.0.0.1`, so on a remote server the management UI is only reachable through a tunnel: `ssh -L 15672:127.0.0.1:15672 user@server`.
 
 #### Local
 
@@ -373,18 +380,21 @@ Required:
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | first admin, created by `scripts/init_db.py` |
 | `SECRET_SESSION_KEY` | cookie session signing key |
 | `YOOMONEY_TOKEN`, `YOOMONEY_WALLET`, `YOOMONEY_NOTIFICATION_SECRET` | YooMoney credentials |
+| `DB_PASSWORD` | PostgreSQL user password |
 
 Optional:
 
 | Variable | Default |
 | --- | --- |
-| `db_url` | connection string hardcoded in `core/config.py` |
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_NAME` | `localhost`, `5432`, `postgres`, `postgres` |
 | `REDIS_HOST`, `REDIS_PORT` | `localhost`, `6379` |
 | `RABBITMQ_HOST`, `RABBITMQ_PORT`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD` | `localhost`, `5672`, `admin`, `admin123` |
 | `R2_ACCESS_KEY`, `R2_SECRET_KEY`, `R2_ENDPOINT`, `R2_PUBLIC_URL` | empty |
 | `IMAGES_DIR` | `/var/www/media` |
 | `SESSION_EXPIRE_TIME`, `SESSION_SECURE` | `86400`, `true` |
 | `logging_level`, `host`, `port` | `INFO`, `localhost`, `8000` |
+
+The DB connection string is assembled from the `DB_*` variables in `core/config.py`; there is no single ready-made URL variable. Inside Compose, `DB_HOST` and `DB_PORT` are set in the `backend` service `environment`, while the rest comes from `.env`, which CI generates on the server from the GitLab variables.
 
 ### API
 
@@ -426,8 +436,8 @@ An honest list, and the basis for the roadmap below.
 
 - **Public endpoints do not verify the caller.** `tg_id` arrives as a path parameter, so anyone can read and modify another user's cart and favorites, place an order on their behalf and drain their balance, or call `GET /users/` for the full user list. Telegram Web App `initData` is never validated.
 - **Balance top-up is directly callable.** `POST /users/replenisment/*` accepts arbitrary `tg_id` and `amount` with no authorization.
-- **Default secrets committed to the repo**: `admin/admin123` for RabbitMQ (in `core/config.py` and `docker-compose.yml`), `password123` for PostgreSQL, a ready-to-use DB connection string in `core/config.py`.
-- **RabbitMQ management port is exposed publicly** (`"15672:15672"`), unlike the other services bound to `127.0.0.1`, and with the default password.
+- **Default secrets committed to the repo**: `admin/admin123` for RabbitMQ is still the field default in `core/config.py` and hardcoded in `docker-compose.yml`. PostgreSQL credentials already moved to the `DB_*` variables; RabbitMQ should follow, with no fallback left in code.
+- **RabbitMQ defaults still live in code**: `RABBITMQ_USER` and `RABBITMQ_PASSWORD` in `core/config.py` still fall back to `admin` / `admin123` when the variable is missing. They should become required, like `DB_PASSWORD`.
 - **An admin session cannot be revoked.** `SessionMiddleware` keeps the state in a signed cookie on the client, with no server-side session record. Deleting an admin, changing a password or leaking the cookie does not log anyone out: access survives until `SESSION_EXPIRE_TIME` elapses, which is a full day.
 - **No CSRF protection or rate limiting** for cookie sessions and `POST /auth/login/`; `same_site` is not configured for `SessionMiddleware`.
 - **Tokens are stored in Redis in plaintext**, and `GET /settings/bot_token/` returns the bot token.
