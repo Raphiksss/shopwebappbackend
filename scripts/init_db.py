@@ -5,39 +5,30 @@ import sys
 
 sys.path.insert(0, "/backend")
 
-from sqlalchemy import text
-from core.db_helper import engine, AsyncSessionLocal
-from core.models.Base import Base
+from sqlalchemy import select
+
+from core.db_helper import AsyncSessionLocal
 from core.models.Admin import Admin
 from core.config import settings
 from api_v1.services import auth
 
 
-async def check_db_empty():
-    """Check if database has no tables."""
-    print(f"DB NAME: {settings.DB.DB_NAME}")
-    async with engine.connect() as conn:
-        db = await conn.execute(text("SELECT current_database()"))
-        print(f"Connected to database: {db.scalar()}")
-        tables = await conn.execute(
-            text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
-        )
-        table_list = [row[0] for row in tables]
-        print(f"Tables found: {table_list}")
-        return len(table_list) == 0
-
-
-async def create_tables():
-    """Create all tables from models."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    print("Tables created successfully")
+def run_migrations():
+    """Bring the schema to head, creating it from scratch on an empty database."""
+    print("Running alembic upgrade head...")
+    result = subprocess.run(
+        ["alembic", "upgrade", "head"], capture_output=True, text=True
+    )
+    print(result.stdout)
+    if result.returncode != 0:
+        # serving traffic on a half-migrated schema corrupts data silently
+        print(result.stderr, file=sys.stderr)
+        sys.exit(1)
+    print("Migrations applied successfully")
 
 
 async def create_initial_admin():
     """Create initial admin if not exists."""
-    from sqlalchemy import select
-
     async with AsyncSessionLocal() as session:
         result = await session.execute(select(Admin).limit(1))
         admin = result.scalar_one_or_none()
@@ -51,44 +42,13 @@ async def create_initial_admin():
             print("Admin already exists, skipping creation")
 
 
-def run_migrations():
-    """Run pending alembic migrations."""
-    print("Running alembic upgrade head...")
-    result = subprocess.run(
-        ["alembic", "upgrade", "head"], capture_output=True, text=True
-    )
-    if result.returncode != 0:
-        print(f"Migration error: {result.stderr}")
-    else:
-        print("Migrations applied successfully")
-
-
-def stamp_head():
-    """Mark all migrations as applied without running them."""
-    print("Stamping database with current head...")
-    result = subprocess.run(
-        ["alembic", "stamp", "head"], capture_output=True, text=True
-    )
-    if result.returncode != 0:
-        print(f"Stamp error: {result.stderr}")
-    else:
-        print("Database stamped successfully")
-
-
 async def main():
     print("=== Database Initialization ===")
+    print(f"DB NAME: {settings.DB.DB_NAME}")
 
-    is_empty = await check_db_empty()
-
-    if is_empty:
-        print("Database is empty, creating tables from models...")
-        await create_tables()
-        stamp_head()
-    else:
-        print("Database already has tables, running migrations...")
-        run_migrations()
-
+    run_migrations()
     await create_initial_admin()
+
     print("=== Initialization Complete ===")
 
 
