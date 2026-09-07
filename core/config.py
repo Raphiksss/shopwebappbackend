@@ -5,10 +5,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DB_Settings(BaseSettings):
-    DB_HOST: str
-    DB_PORT: int
-    DB_NAME: str = Field("postgres", validation_alias="DB_NAME")
-    DB_USER: str = Field("postgres", validation_alias="DB_USER")
+    DB_HOST: str = Field(default="localhost")
+    DB_PORT: int = Field(default=5432)
+    DB_NAME: str = Field(default="postgres")
+    DB_USER: str = Field(default="postgres")
     DB_PASSWORD: str
 
     @property
@@ -23,11 +23,11 @@ class DB_Settings(BaseSettings):
     R2_ENDPOINT: str
     R2_PUBLIC_URL: str
 
-    REDIS_HOST: str
-    REDIS_PORT: int
+    REDIS_HOST: str = Field(default="localhost")
+    REDIS_PORT: int = Field(default=6379)
 
-    RABBITMQ_HOST: str
-    RABBITMQ_PORT: int
+    RABBITMQ_HOST: str = Field(default="localhost")
+    RABBITMQ_PORT: int = Field(default=5672)
     RABBITMQ_USER: str
     RABBITMQ_PASSWORD: str
 
@@ -49,7 +49,6 @@ class Settings(BaseSettings):
     logging_level: str = "INFO"
     origins: List[str] = [
         "http://localhost:5173",
-        "http://10.177.93.85:5173",
         "https://redstoreapp.com",
     ]
     ADMIN_USERNAME: str
