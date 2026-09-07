@@ -94,13 +94,13 @@ scripts/          entrypoint.sh, init_db.py, init_minio.sh
 - **Каталог**: товары и категории с загрузкой изображений (пережатие через Pillow, EXIF-ориентация, whitelist MIME-типов), два типа товара: `instantly` (цифровой, выдаётся сразу) и `notinstantly` (обрабатывается вручную).
 - **Корзина в Redis** (RedisJSON) с инкрементом количества, удалением одной позиции, позиции целиком и всей корзины.
 - **Избранное** через many-to-many таблицу `favorites`.
-- **Заказы**: списание с баланса, создание заказа и позиций, очистка корзины, публикация событий в RabbitMQ; фильтр по статусу и пагинация в админском списке.
+- **Заказы**: списание с баланса, создание заказа и позиций, очистка корзины, публикация событий в RabbitMQ; фильтр по статусу и пагинация в админском списке. Позиция хранит снимок названия, цены и количества на момент покупки, поэтому изменение или удаление товара не переписывает историю.
 - **Асинхронная обработка через RabbitMQ**: API отвечает сразу, тяжёлые операции (обращения к Telegram API, выдача товара) уходят в очереди с ретраями и DLQ.
 - **Платежи**: Telegram Stars (`send_invoice`, `pre_checkout_query`, `successful_payment`), CryptoBot (создание инвойса и проверка статуса), ЮMoney (Quickpay + вебхук с проверкой SHA-1 подписи и защитой от повторной обработки через `SET NX EX` в Redis).
 - **Админ-авторизация**: bcrypt-хеши в таблице `admins`, вход по логину/паролю, серверная сессия в подписанной cookie (`SessionMiddleware`), защита изменяющих эндпоинтов зависимостью `check_if_auth`.
 - **Рантайм-настройки магазина в Redis**: акцентный цвет, курс звёзд, токен бота (с горячим перезапуском polling), токен CryptoBot, реквизиты ЮMoney, список включённых способов оплаты.
 - **Инфраструктура**: Docker Compose (backend, PostgreSQL, Redis, RabbitMQ с healthcheck'ами), `entrypoint.sh` с ожиданием БД и автоинициализацией, деплой из GitLab CI по пушу в `main`.
-- **Миграции**: 17 ревизий Alembic с async-движком и датированными именами файлов.
+- **Миграции**: 17 ревизий Alembic с async-движком и датированными именами файлов. Схема собирается только миграциями — `entrypoint.sh` всегда выполняет `alembic upgrade head` и останавливает контейнер, если миграция не прошла.
 
 ### Запуск
 
@@ -186,60 +186,11 @@ docker compose exec backend black --check .  # проверить без изм�
 
 В PyCharm: `Settings → Tools → Black` (включить) и `Settings → Tools → Actions on Save → Reformat code`.
 
-### Известные проблемы и техдолг
-
-Список честный, он же основа для роадмапа ниже.
-
-#### Безопасность
-
-- **Публичные эндпоинты не проверяют, кто их вызывает.** `tg_id` приходит параметром пути, поэтому любой человек может прочитать и изменить чужую корзину и избранное, создать заказ за другого пользователя и списать его баланс, запросить `GET /users/` со списком всех пользователей. Подпись `initData` из Telegram Web App нигде не валидируется.
-- **Пополнение баланса вызывается напрямую.** `POST /users/replenisment/*` принимает произвольные `tg_id` и `amount` без авторизации.
-- **Сессию админа нельзя отозвать.** `SessionMiddleware` хранит состояние в подписанной cookie на клиенте, серверной записи о сессии нет. Удаление админа, смена пароля и утечка cookie не выкидывают его из системы: доступ живёт до истечения `SESSION_EXPIRE_TIME`, то есть сутки.
-- **Нет CSRF-защиты и rate limit** для cookie-сессий и `POST /auth/login/`, `same_site` для `SessionMiddleware` не задан.
-- **Токены хранятся в Redis в открытом виде**, а `GET /settings/bot_token/` возвращает токен бота.
-- **Path traversal при загрузке файлов товара**: `os.path.join("files", data.filename)` использует имя файла от клиента без нормализации.
-- **`db.sqlite3` закоммичен в репозиторий**, а образ собирается без `.dockerignore`, поэтому в него попадают `.git`, локальная БД и `files/`.
-
-#### Консистентность данных
-
-- **Удаление товара падает из-за жёстких внешних ключей.** Если товар лежит у кого-то в избранном, есть отзывы или он попал в заказ, `DELETE /products/{id}/` возвращает 500 с `IntegrityError`: FK созданы без `ON DELETE`, у relationship нет `cascade` и `passive_deletes`. Аналогично не удаляется категория с товарами и пользователь с избранным. Подробный разбор и план исправления в [планах](#планы).
-- **Создание заказа не транзакционно**: баланс списывается и коммитится отдельно от создания заказа, до очистки корзины и публикации сообщений. Падение в середине оставляет пользователя без денег и без заказа.
-- **Нет блокировки строки при списании баланса**: параллельные запросы дают двойную трату и отрицательный баланс. При недостатке средств возвращается `HTTPException(500)` вместо 400/402.
-- **`OrdersItem` не хранит количество и цену на момент покупки**, поэтому состав и сумму заказа нельзя восстановить, а изменение цены товара переписывает историю.
-- **Схема на естественных ключах**: `Product.category_title` ссылается на `categorys.title`, `Order.user` на `users.tg_id`. Переименование категории каскадит по всем товарам, а имя таблицы `categorys` появилось из автогенерации `__tablename__`.
-- **Нет `created_at` / `updated_at`** ни в одной модели, заказы нельзя отсортировать по времени.
-- **`Product.rating` живёт отдельно от `Review.rate`**: рейтинг не агрегируется из отзывов, а задаётся вручную из формы.
-- **`scripts/init_db.py` на пустой БД делает `create_all` + `alembic stamp head`**, что расходится с историей миграций.
-- **ЮMoney-вебхук идемпотентен по `label`, а не по `operation_id`**, а `int(float(amount))` отбрасывает копейки.
-
-#### Архитектура
-
-- **API, бот и consumers в одном процессе.** Горизонтально не масштабируется: при нескольких воркерах Uvicorn получим конфликт `getUpdates` и дублирующую обработку очередей.
-- **Блокирующий код в async-хендлерах**: синхронный `redis` в корзине, `requests` в боте для CryptoBot API, bcrypt прямо в event loop.
-- **Новое подключение к Redis на каждый запрос** в корзине, настройках и вебхуке, вместо общего пула.
-- **Баг в `cart.add_product`**: `return r.json().get(...)` стоит после выхода из `with`, то есть обращение к уже закрытому клиенту.
-- **Три точки подключения к RabbitMQ**: producer-брокер, consumer-брокер и лишний `RabbitRouter` в `api_v1/services/bot.py` с демо-эндпоинтом `POST /orders/new/`, публикующим сообщение в никуда.
-- **Состояние бота в памяти процесса**: `cr_responses` и `cr_amounts` теряются при перезапуске и не работают в нескольких процессах.
-- **Два конкурирующих хранилища файлов**: `core/s3_core.py` (R2) написан, но роутеры используют локальный `services/images.py` с захардкоженным доменом `https://media.redstoreapp.com/`.
-- **Слои размыты**: часть роутеров дергает репозитории напрямую, минуя сервисы; `services/dependencies.py` совмещает парсинг формы с обращениями к БД; в `services/orders.py` локальная переменная называется `sum`.
-- **Нет пагинации в каталоге**: `GET /products/` и `GET /categories/` всегда отдают всё целиком.
-- **CORS-origins и хосты захардкожены** в `core/config.py`, включая локальный IP из домашней сети.
-
-#### Качество и эксплуатация
-
-- **Нет ни одного теста**, нет линтера и type-check в CI (пайплайн только деплоит).
-- **Отладочный вывод в проде**: `print("d")` в `services/dependencies.py`, `print(items)` в `services/orders.py`, `print` в `repositories/products.py` и `bot/bot.py`.
-- **Нет healthcheck-эндпоинта**: `GET /` возвращает строку `"Hello"`.
-- **Мусор в зависимостях и репозитории**: `aiosqlite` вместе с `db.sqlite3` от раннего прототипа, одновременно `yoomoney` и `aioyoomoney-api`, пустой `files.py`, миграция с именем `описание_миграции`.
-- **Контейнер запускается от root**, `poetry install` тянет и dev-зависимости.
-- **Логирование через `logging.getLogger(__name__)` в `core/common.py`**, поэтому все логи ядра идут от одного имени; в `views/users.py` используется устаревший `logger.warn`.
-
 ### Планы
 
-1. **Каскадное удаление товаров** (баг, чиним первым). Товар не удаляется, если он лежит у кого-то в избранном, имеет отзывы или попал в заказ.
-2. **Перестройка авторизации.** Серверные сессии в БД вместо подписанной cookie, чтобы админа можно было отозвать мгновенно, и авторизация клиента вместо `tg_id` в пути.
-3. **Улучшение архитектуры.** Разделение API, бота и consumers по процессам, атомарное создание заказа, нормализация схемы.
-4. **Кеширование.** Кеш каталога в Redis и общий пул подключений вместо нового клиента на каждый запрос.
+1. **Перестройка авторизации.** Серверные сессии в БД вместо подписанной cookie, чтобы админа можно было отозвать мгновенно, и авторизация клиента вместо `tg_id` в пути.
+2. **Улучшение архитектуры.** Разделение API, бота и consumers по процессам, атомарное создание заказа, нормализация схемы.
+3. **Кеширование.** Кеш каталога в Redis и общий пул подключений вместо нового клиента на каждый запрос.
 
 </details>
 
@@ -332,13 +283,13 @@ scripts/          entrypoint.sh, init_db.py, init_minio.sh
 - **Catalog**: products and categories with image upload (Pillow re-encoding, EXIF transpose, MIME whitelist), two product types: `instantly` (digital, delivered immediately) and `notinstantly` (handled manually).
 - **Redis cart** (RedisJSON) with quantity increment, removing one unit, removing a whole line item, and clearing the cart.
 - **Favorites** via the `favorites` many-to-many table.
-- **Orders**: balance debit, order and order item creation, cart cleanup, event publishing to RabbitMQ; status filter and pagination for the admin list.
+- **Orders**: balance debit, order and order item creation, cart cleanup, event publishing to RabbitMQ; status filter and pagination for the admin list. Each line item stores a snapshot of the title, price and quantity at purchase time, so editing or deleting a product does not rewrite history.
 - **Async processing over RabbitMQ**: the API responds immediately while slow work (Telegram API calls, product delivery) moves to queues with retries and a DLQ.
 - **Payments**: Telegram Stars (`send_invoice`, `pre_checkout_query`, `successful_payment`), CryptoBot (invoice creation and status polling), YooMoney (Quickpay + webhook with SHA-1 signature check and replay protection via `SET NX EX` in Redis).
 - **Admin auth**: bcrypt hashes in the `admins` table, login by username/password, server-side session in a signed cookie (`SessionMiddleware`), mutating endpoints guarded by the `check_if_auth` dependency.
 - **Runtime shop settings in Redis**: accent color, stars exchange rate, bot token (with hot polling restart), CryptoBot token, YooMoney credentials, enabled payment methods.
 - **Infrastructure**: Docker Compose (backend, PostgreSQL, Redis, RabbitMQ with healthchecks), `entrypoint.sh` that waits for the DB and auto-initializes it, GitLab CI deploy on push to `main`.
-- **Migrations**: 17 Alembic revisions with an async engine and date-prefixed filenames.
+- **Migrations**: 17 Alembic revisions with an async engine and date-prefixed filenames. The schema is built by migrations alone — `entrypoint.sh` always runs `alembic upgrade head` and stops the container if a migration fails.
 
 ### Getting started
 
@@ -424,59 +375,10 @@ docker compose exec backend black --check .  # check without writing
 
 In PyCharm: `Settings → Tools → Black` (enable) and `Settings → Tools → Actions on Save → Reformat code`.
 
-### Known issues and tech debt
-
-An honest list, and the basis for the roadmap below.
-
-#### Security
-
-- **Public endpoints do not verify the caller.** `tg_id` arrives as a path parameter, so anyone can read and modify another user's cart and favorites, place an order on their behalf and drain their balance, or call `GET /users/` for the full user list. Telegram Web App `initData` is never validated.
-- **Balance top-up is directly callable.** `POST /users/replenisment/*` accepts arbitrary `tg_id` and `amount` with no authorization.
-- **An admin session cannot be revoked.** `SessionMiddleware` keeps the state in a signed cookie on the client, with no server-side session record. Deleting an admin, changing a password or leaking the cookie does not log anyone out: access survives until `SESSION_EXPIRE_TIME` elapses, which is a full day.
-- **No CSRF protection or rate limiting** for cookie sessions and `POST /auth/login/`; `same_site` is not configured for `SessionMiddleware`.
-- **Tokens are stored in Redis in plaintext**, and `GET /settings/bot_token/` returns the bot token.
-- **Path traversal on product file upload**: `os.path.join("files", data.filename)` uses the client-supplied filename without normalization.
-- **`db.sqlite3` is committed to the repository**, and the image is built without a `.dockerignore`, so `.git`, the local DB and `files/` end up inside it.
-
-#### Data consistency
-
-- **Product deletion fails on hard foreign keys.** If a product is in someone's favorites, has reviews, or appears in an order, `DELETE /products/{id}/` returns a 500 with `IntegrityError`: the FKs were created without `ON DELETE`, and the relationships have no `cascade` or `passive_deletes`. A category with products and a user with favorites cannot be deleted either. Full breakdown and fix plan in the [roadmap](#roadmap).
-- **Order creation is not transactional**: the balance is debited and committed separately from order creation, before the cart is cleared and messages are published. A mid-way failure leaves the user without money and without an order.
-- **No row lock when debiting the balance**: concurrent requests allow double spending and a negative balance. Insufficient funds return `HTTPException(500)` instead of 400/402.
-- **`OrdersItem` stores neither quantity nor the price at purchase time**, so the order contents and total cannot be reconstructed, and a price change rewrites history.
-- **Schema built on natural keys**: `Product.category_title` references `categorys.title`, `Order.user` references `users.tg_id`. Renaming a category cascades across all products, and the `categorys` table name comes from the auto-generated `__tablename__`.
-- **No `created_at` / `updated_at`** on any model, so orders cannot be sorted by time.
-- **`Product.rating` is decoupled from `Review.rate`**: the rating is not aggregated from reviews, it is typed in through the form.
-- **`scripts/init_db.py` runs `create_all` + `alembic stamp head` on an empty DB**, which drifts from the migration history.
-- **The YooMoney webhook is idempotent on `label`, not `operation_id`**, and `int(float(amount))` drops the fractional part.
-
-#### Architecture
-
-- **API, bot and consumers share one process.** It does not scale horizontally: multiple Uvicorn workers would cause `getUpdates` conflicts and duplicated queue processing.
-- **Blocking calls inside async handlers**: synchronous `redis` in the cart, `requests` in the bot for the CryptoBot API, bcrypt straight on the event loop.
-- **A new Redis connection per request** in the cart, settings and webhook code instead of a shared pool.
-- **Bug in `cart.add_product`**: `return r.json().get(...)` sits outside the `with` block, so it talks to an already closed client.
-- **Three RabbitMQ connection points**: the producer broker, the consumer broker, and a leftover `RabbitRouter` in `api_v1/services/bot.py` with a demo `POST /orders/new/` endpoint publishing into nowhere.
-- **Bot state kept in process memory**: `cr_responses` and `cr_amounts` are lost on restart and break with more than one process.
-- **Two competing file storages**: `core/s3_core.py` (R2) exists, but the routers use the local `services/images.py` with a hardcoded `https://media.redstoreapp.com/` domain.
-- **Blurred layers**: some routers hit repositories directly, bypassing services; `services/dependencies.py` mixes form parsing with DB access; `services/orders.py` shadows the builtin `sum`.
-- **No pagination in the catalog**: `GET /products/` and `GET /categories/` always return everything.
-- **CORS origins and hosts are hardcoded** in `core/config.py`, including a home LAN IP.
-
-#### Quality and operations
-
-- **Zero tests**, no linter or type check in CI (the pipeline only deploys).
-- **Debug output in production**: `print("d")` in `services/dependencies.py`, `print(items)` in `services/orders.py`, `print` in `repositories/products.py` and `bot/bot.py`.
-- **No healthcheck endpoint**: `GET /` returns the string `"Hello"`.
-- **Leftovers in dependencies and the repo**: `aiosqlite` together with `db.sqlite3` from the early prototype, both `yoomoney` and `aioyoomoney-api`, an empty `files.py`, a migration literally named "описание_миграции".
-- **The container runs as root**, and `poetry install` pulls dev dependencies too.
-- **Logging goes through `logging.getLogger(__name__)` in `core/common.py`**, so all core logs share one logger name; `views/users.py` uses the deprecated `logger.warn`.
-
 ### Roadmap
 
-1. **Cascading product deletes** (bug, fixed first). A product cannot be deleted while it sits in someone's favorites, has reviews, or appears in an order.
-2. **Auth rebuild.** Server-side sessions in the database instead of a signed cookie, so an admin can be revoked instantly, plus real client auth instead of `tg_id` in the path.
-3. **Architecture improvements.** Split the API, bot and consumers into separate processes, make order creation atomic, normalize the schema.
-4. **Caching.** Redis cache for the catalog and a shared connection pool instead of a new client per request.
+1. **Auth rebuild.** Server-side sessions in the database instead of a signed cookie, so an admin can be revoked instantly, plus real client auth instead of `tg_id` in the path.
+2. **Architecture improvements.** Split the API, bot and consumers into separate processes, make order creation atomic, normalize the schema.
+3. **Caching.** Redis cache for the catalog and a shared connection pool instead of a new client per request.
 
 </details>

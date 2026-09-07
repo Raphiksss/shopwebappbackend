@@ -7,6 +7,7 @@ from ..services import products, users, cart
 from ..repositories import orders
 from core.models import Order
 from core.rabbitmq import publish_instant_delivery, publish_order_notification
+from ..schemas.products import ProductRead
 from ..schemas.messages import InstantDeliveryMessage, OrderNotificationMessage
 from ..schemas.orders import PartialOrderUpdate
 
@@ -16,20 +17,21 @@ logger = logging.getLogger(__name__)
 async def create_order(tg_id: int, session: AsyncSession):
     # создаем переменные на будущее и вытаскиваем пользователя с корзиной
     sum = 0
-    items: dict = {}
-    products_ids = []
+
     user = await users.get_user(tg_id, session)
-    cart_products = cart.get_card(tg_id)
+    user_cart = cart.get_card(tg_id)
+    items = user_cart["products"].items()
+    all_prods: list[tuple[int, ProductRead]] = []
+    product_titles: dict[str, int] = {}
     # есть ли в заказе товары которые не выдаются моментально
     nt_i = False
     instant_products = []  # Список товаров для мгновенной доставки
 
-    # получаем айдишники товаров с редиса, названия и считаем сумму
-    for key, value in cart_products["products"].items():
+    for key, value in items:
         res = await products.get_product(int(key), session)
-        products_ids.append(int(key))
+        all_prods.append((value, res))
+        product_titles[res.title] = value
         sum += res.price * value
-        items[res.title] = value
         if res.product_type == "instantly":
             # Сохраняем товар для отправки через RabbitMQ после создания заказа
             instant_products.append(
@@ -43,16 +45,24 @@ async def create_order(tg_id: int, session: AsyncSession):
         await session.commit()
     else:
         raise HTTPException(500)
-    print(items)
+
     # создаем заказ
     new_order = Order(user=tg_id, sum=sum)
     await orders.create_order(new_order, session)
     await session.flush()
 
     # добовляем в него товары
-    for product_id in products_ids:
-        item = OrdersItem(order_id=new_order.id, product_id=product_id)
-        session.add(item)
+    for quantity, prod in all_prods:
+        session.add(
+            OrdersItem(
+                order_id=new_order.id,
+                product_id=prod.id,
+                title=prod.title,
+                price=prod.price,
+                quantity=quantity,
+            )
+        )
+
     await session.commit()
     await session.refresh(new_order)
 
@@ -75,7 +85,7 @@ async def create_order(tg_id: int, session: AsyncSession):
             tg_id=new_order.user,
             username=user.username,
             order_id=new_order.id,
-            items=items,
+            items=product_titles,
             sum=new_order.sum,
         )
         await publish_order_notification(notification.model_dump())

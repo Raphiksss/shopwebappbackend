@@ -19,7 +19,9 @@ class Order(Base):
 
 class OrdersItem(Base):
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"))
-    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
-    product_rel: Mapped["Product"] = relationship(back_populates="in_order")
+    product_id: Mapped[int | None]
+    title: Mapped[str]
+    price: Mapped[int]
+    quantity: Mapped[int]
 
     order: Mapped["Order"] = relationship(back_populates="items")

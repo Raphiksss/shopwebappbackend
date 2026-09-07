@@ -10,5 +10,7 @@ if TYPE_CHECKING:
 class Review(Base):
     body: Mapped[str]
     rate: Mapped[float]
-    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE")
+    )
     product: Mapped["Product"] = relationship(back_populates="reviews")

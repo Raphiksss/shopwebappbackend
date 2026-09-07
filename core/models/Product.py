@@ -27,11 +27,12 @@ class Product(Base):
         back_populates="favorites",
         lazy="selectin",
     )
-    reviews: Mapped[list["Review"]] = relationship(back_populates="product")
+    reviews: Mapped[list["Review"]] = relationship(
+        back_populates="product", cascade="all, delete-orphan"
+    )
     category: Mapped["Category"] = relationship(back_populates="products")
     product_type: Mapped[str] = mapped_column(
         Enum("instantly", "notinstantly", name="processing_mode"),
         server_default="notinstantly",
     )
     product_data: Mapped[str | None] = mapped_column(server_default=None, nullable=True)
-    in_order: Mapped[list["OrdersItem"]] = relationship(back_populates="product_rel")

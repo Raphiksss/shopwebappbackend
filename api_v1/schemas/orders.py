@@ -5,13 +5,14 @@ from ..schemas.products import ProductRead
 
 class CreateOrder(BaseModel):
     tg_id: int
-    # product_ids: list[int]
 
 
 class OrderItems(BaseModel):
     id: int
     product_id: int
-    product_rel: ProductRead
+    title: str
+    price: int
+    quantity: int
 
 
 class ReadOrders(BaseModel):
