@@ -25,7 +25,7 @@ class AccessPayload:
 class ClientAuthService:
     def __init__(self, token_service: PyJWTTokenService,
                  session: AsyncSession,
-                 access_til_days: int = 5):
+                 access_til_days: int):
         self._token_service = token_service
         self._session = session
         self._access_til_days = access_til_days

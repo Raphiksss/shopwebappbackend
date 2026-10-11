@@ -86,7 +86,7 @@ async def get_user_dp(user_id: int, session: AsyncSession) -> Type[User]:
 
 async def get_client_auth_service(session:AsyncSession = Depends(get_session)) ->ClientAuthService:
     token_service = PyJWTTokenService(private_key=settings.CLIENT_AUTH.secret_key, public_key=None, algorithm=settings.CLIENT_AUTH.algorithm)
-    return ClientAuthService(token_service=token_service, session=session)
+    return ClientAuthService(token_service=token_service, session=session, access_til_days=settings.CLIENT_AUTH.access_til_days)
 
 async def get_users_tg_id(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),auth_service: ClientAuthService = Depends(get_client_auth_service)):
     user_data: AccessPayload = await auth_service.get_user_data(credentials.credentials)
