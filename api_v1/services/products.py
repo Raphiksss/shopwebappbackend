@@ -9,7 +9,7 @@ from ..schemas.products import (
     ProductUpdate,
     ProductUpdateStrings,
 )
-from .dependencies import get_product_dp
+from api_v1.views.dependencies import get_product_dp
 from fastapi import HTTPException
 
 

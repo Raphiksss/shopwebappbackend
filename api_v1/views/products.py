@@ -1,19 +1,18 @@
 import os
 from typing import Optional
 from ..services.images import upload_image
-from fastapi import APIRouter, Depends, UploadFile, status, File, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.db_helper import get_session
 from ..schemas.products import (
     ProductRead,
     ProductCreate,
-    ProductUpdate,
     ProductUpdateStrings,
 )
 from ..schemas import general
-from ..services.dependencies import text_data, upload_foto, text_data_partial
-from core import s3_client
-from ..services import products_services, auth
+from api_v1.views.dependencies import text_data, upload_foto, text_data_partial
+from ..services import products_services
+from api_v1.services import admin_auth
 
 router = APIRouter(tags=["Products"])
 
@@ -41,7 +40,7 @@ async def create_product(
     img: UploadFile = Depends(upload_foto),
     data: Optional[UploadFile] = None,
     session: AsyncSession = Depends(get_session),
-    _=Depends(auth.check_if_auth),
+    _=Depends(admin_auth.check_if_auth),
 ):
     image_url = await upload_image(img)
     file_location = None
@@ -99,7 +98,7 @@ async def product_partial_update(
     img: Optional[UploadFile] = None,
     data: Optional[UploadFile] = None,
     session: AsyncSession = Depends(get_session),
-    _=Depends(auth.check_if_auth),
+    _=Depends(admin_auth.check_if_auth),
 ):
     image_url = None
     data_url = None
@@ -133,6 +132,6 @@ async def product_partial_update(
 async def delete_products(
     product_id: int,
     session: AsyncSession = Depends(get_session),
-    _=Depends(auth.check_if_auth),
+    _=Depends(admin_auth.check_if_auth),
 ):
     return await products_services.delete_product(product_id, session)

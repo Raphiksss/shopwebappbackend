@@ -5,6 +5,7 @@ from core.models.Order import OrdersItem
 from ..schemas.orders import CreateOrder
 from ..services import products, users, cart
 from ..repositories import orders
+from ..repositories.users import UserBy
 from core.models import Order
 from core.rabbitmq import publish_instant_delivery, publish_order_notification
 from ..schemas.products import ProductRead
@@ -18,7 +19,7 @@ async def create_order(tg_id: int, session: AsyncSession):
     # создаем переменные на будущее и вытаскиваем пользователя с корзиной
     sum = 0
 
-    user = await users.get_user(tg_id, session)
+    user = await users.get_user(session, UserBy.TG_ID, tg_id)
     user_cart = cart.get_card(tg_id)
     items = user_cart["products"].items()
     all_prods: list[tuple[int, ProductRead]] = []

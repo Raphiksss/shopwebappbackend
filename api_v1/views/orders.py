@@ -1,4 +1,3 @@
-import asyncio
 from typing import Optional
 
 from fastapi import APIRouter, Depends
@@ -6,9 +5,10 @@ from starlette import status
 from ..schemas.general import ErrorResponse
 
 from core.db_helper import get_session
-from ..schemas.orders import CreateOrder, PartialOrderUpdate, ReadOrders
+from ..schemas.orders import PartialOrderUpdate, ReadOrders
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..services import orders, auth
+from ..services import orders
+from api_v1.services import admin_auth
 
 router = APIRouter(tags=["Orders"])
 
@@ -31,7 +31,7 @@ async def get_orders(
     limit: Optional[int] = None,
     status: Optional[str] = None,
     session: AsyncSession = Depends(get_session),
-    _=Depends(auth.check_if_auth),
+    _=Depends(admin_auth.check_if_auth),
 ):
     return await orders.get_orders(status, page, limit, session)
 
@@ -49,6 +49,6 @@ async def update_order_partial(
     order_id: int,
     new_order: PartialOrderUpdate,
     session: AsyncSession = Depends(get_session),
-    _=Depends(auth.check_if_auth),
+    _=Depends(admin_auth.check_if_auth),
 ):
     return await orders.product_partial_update(order_id, new_order, session)

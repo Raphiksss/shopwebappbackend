@@ -1,11 +1,11 @@
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from core.models import User
+
 from ..repositories import users_repository
+from ..repositories.users import User, UserBy
 from ..schemas import users_schemas, messages
 from core.rabbitmq import publish_stars_replenishment, publish_crypto_bot_replenishment
-from ..services.dependencies import get_user_dp
 
 
 async def create_user(user: users_schemas.UserCreate, session: AsyncSession):
@@ -17,8 +17,8 @@ async def create_user(user: users_schemas.UserCreate, session: AsyncSession):
     return res
 
 
-async def get_user(tg_id: int, session: AsyncSession) -> User:
-    res = await users_repository.get_user(tg_id, session)
+async def get_user(session: AsyncSession, by: UserBy, value: int|str) -> User:
+    res = await users_repository.get_user(session, by, value)
     if not res:
         raise HTTPException(status_code=404, detail="User not found")
     return res
@@ -27,7 +27,9 @@ async def get_user(tg_id: int, session: AsyncSession) -> User:
 async def update_user_partial(
     user_id: int, new_user: users_schemas.UserPartialUpdate, session: AsyncSession
 ):
-    user: User = await get_user_dp(user_id, session)
+    user = await get_user(session, UserBy.ID, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     new_user = await users_repository.update_user_partial(new_user, user, session)
     await session.refresh(user)
     return user

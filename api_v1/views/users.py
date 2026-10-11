@@ -1,17 +1,54 @@
+import redis.asyncio as aioredis
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, status, Depends, Form, HTTPException
+
 from core.db_helper import get_session
 from ..schemas.users import UserRead, UserCreate, UserPartialUpdate
 from ..services import users_services
-from fastapi import APIRouter, status, Depends, Form, HTTPException
 from ..repositories import users_repository
+from ..repositories.users import UserBy
 from ..schemas.general import ErrorResponse
 from ..services.Yoomoney import create_invoice, verify_webhook_signature
+from api_v1.views.dependencies import get_client_auth_service
+from api_v1.services.client_auth import ClientAuthService, AccessPayload
+from api_v1.services import admin_auth
 from core import settings, logger
-import redis.asyncio as aioredis
-from ..services.auth import check_if_auth
+
 
 router = APIRouter(tags=["Users"])
+bearer_scheme = HTTPBearer()
 
+class LoginRequest(BaseModel):
+    init_data: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+@router.post(
+    "/login/",
+    summary="Login User",
+    status_code=status.HTTP_200_OK,
+    response_model=TokenResponse,
+)
+async def login_user(login_data: LoginRequest, auth_service:ClientAuthService = Depends(get_client_auth_service)):
+    access_token = await auth_service.login(login_data.init_data)
+    return TokenResponse(access_token=access_token)
+
+@router.get(
+    "/me/",
+    summary="Get User Data",
+    status_code=status.HTTP_200_OK,
+    response_model=UserRead,
+)
+async def get_current_user_data(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme), auth_service: ClientAuthService = Depends(get_client_auth_service), session: AsyncSession = Depends(get_session)):
+    user_data: AccessPayload = await auth_service.get_user_data(credentials.credentials)
+    tg_id = int(user_data.sub)
+    return await users_repository.get_user(session, UserBy.TG_ID, tg_id)
 
 @router.get(
     "/",
@@ -49,7 +86,7 @@ async def create_user(user: UserCreate, session: AsyncSession = Depends(get_sess
     },
 )
 async def get_user(tg_id: int, session: AsyncSession = Depends(get_session)):
-    return await users_services.get_user(tg_id, session)
+    return await users_services.get_user(session, UserBy.TG_ID, tg_id)
 
 
 @router.patch(
@@ -66,7 +103,7 @@ async def user_partial_update(
     user_id: int,
     new_user: UserPartialUpdate,
     session: AsyncSession = Depends(get_session),
-    _=Depends(check_if_auth),
+    _=Depends(admin_auth.check_if_auth),
 ):
     return await users_services.update_user_partial(user_id, new_user, session)
 

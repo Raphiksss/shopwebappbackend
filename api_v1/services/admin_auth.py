@@ -1,21 +1,20 @@
-from core.models import Admin
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from fastapi import Request, HTTPException
-from pydantic import SecretStr, BaseModel
 import bcrypt
+from fastapi import HTTPException, Request
+from pydantic import SecretStr
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-
-async def hash_password(password: str) -> bytes:
-    salt = bcrypt.gensalt()
-    pb = password.encode()
-    return bcrypt.hashpw(pb, salt)
+from core.models import Admin
 
 
 def validate_password(password: str, hashed: bytes) -> bool:
     pb = password.encode()
     return bcrypt.checkpw(pb, hashed)
 
+async def hash_password(password: str) -> bytes:
+    salt = bcrypt.gensalt()
+    pb = password.encode()
+    return bcrypt.hashpw(pb, salt)
 
 async def create_admin(username: str | SecretStr, password: str, session: AsyncSession):
     hashed_password: bytes = await hash_password(password)

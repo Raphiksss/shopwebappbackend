@@ -1,10 +1,16 @@
 from typing import Optional, Type
+
 from pydantic_core import ValidationError
-from core.db_helper import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
-from core.models import Product, User
-from ..schemas.products import ProductCreate, ProductUpdateStrings
 from fastapi import Form, UploadFile, File, HTTPException, Depends, status
+
+from core.db_helper import get_session
+from core.models import Product, User
+from core.config import settings
+from api_v1.schemas.products import ProductCreate, ProductUpdateStrings
+from api_v1.services.client_auth import ClientAuthService
+from api_v1.repositories.jwt_token_service import PyJWTTokenService
+
 
 
 def text_data(
@@ -71,7 +77,11 @@ async def get_product_dp(
 
 async def get_user_dp(user_id: int, session: AsyncSession) -> Type[User]:
     user = await session.get(User, user_id)
-    print("d")
     if not user:
         raise HTTPException(404, detail="Пользователь не найден")
     return user
+
+async def get_client_auth_service(session:AsyncSession = Depends(get_session)) ->ClientAuthService:
+    token_service = PyJWTTokenService(private_key=settings.CLIENT_AUTH.secret_key, public_key=None, algorithm=settings.CLIENT_AUTH.algorithm)
+    return ClientAuthService(token_service=token_service, session=session)
+

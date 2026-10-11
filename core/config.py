@@ -33,6 +33,11 @@ class DB_Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+class ClientAuthSettings(BaseSettings):
+    secret_key: str = Field(default="1", alias="SECRET_JWT_KEY")
+    algorithm: str = "HS256"
+    access_til_days: int = 5
+
 
 class BOT_Settings(BaseSettings):
     bot_token: str = Field(alias="BOT_TOKEN")
@@ -61,6 +66,7 @@ class Settings(BaseSettings):
     SESSION_SECURE: bool = True
     DB: DB_Settings = DB_Settings()
     BOT: BOT_Settings = BOT_Settings()
+    CLIENT_AUTH: ClientAuthSettings = ClientAuthSettings()
     model_config = SettingsConfigDict(
         env_file=".env", case_sensitive=True, extra="ignore"
     )

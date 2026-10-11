@@ -8,7 +8,7 @@ from api_v1.schemas.settings import (
     YooMoneyData,
     PaymentMethods,
 )
-from api_v1.services.auth import check_if_auth
+from api_v1.services.admin_auth import check_if_auth
 from api_v1.services.settings import (
     change_accent_color,
     get_accent_color,

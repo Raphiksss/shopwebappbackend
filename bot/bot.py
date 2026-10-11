@@ -6,6 +6,7 @@ from aiogram.filters import Command
 from sqlalchemy.exc import IntegrityError
 from aiogram.client.session.aiohttp import AiohttpSession
 from api_v1.repositories import users_repository
+from api_v1.repositories.users import UserBy
 from api_v1.schemas.users import UserCreate
 from core.db_helper import get_session
 from core import settings
@@ -298,7 +299,7 @@ async def check_payment_callback(callback: types.CallbackQuery):
 async def cmd_profile(message: types.Message):
     async for session in get_session():
         profile = await users_repository.get_user(
-            tg_id=message.from_user.id, session=session
+            session, UserBy.TG_ID, message.from_user.id
         )
         await message.answer(f"Ваши данные {profile.username},{profile.balance}")
         break

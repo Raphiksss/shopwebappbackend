@@ -41,7 +41,11 @@ async def lifespan(app: FastAPI):
     logger.info("RabbitMQ broker stopped")
 
 
-app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(lifespan=lifespan,
+              # docs_url=None,
+              # redoc_url=None,
+              # openapi_url=None
+)
 
 app.include_router(v1_router)
 app.add_middleware(

@@ -10,7 +10,7 @@ from sqlalchemy import select
 from core.db_helper import AsyncSessionLocal
 from core.models.Admin import Admin
 from core.config import settings
-from api_v1.services import auth
+from api_v1.services import admin_auth
 
 
 def run_migrations():
@@ -36,7 +36,7 @@ async def create_initial_admin():
         if admin is None:
             username = str(settings.ADMIN_USERNAME)
             password = str(settings.ADMIN_PASSWORD)
-            await auth.create_admin(username, password, session)
+            await admin_auth.create_admin(username, password, session)
             print(f"Created initial admin: {username}")
         else:
             print("Admin already exists, skipping creation")
