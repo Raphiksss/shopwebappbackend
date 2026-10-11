@@ -1,11 +1,10 @@
 from typing import Optional, Type
 
-from fastapi.security import HTTPAuthorizationCredentials
 from pydantic_core import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Form, UploadFile, File, HTTPException, Depends, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from api_v1.views.users import bearer_scheme
 from core.db_helper import get_session
 from core.models import Product, User
 from core.config import settings
@@ -13,6 +12,8 @@ from api_v1.schemas.products import ProductCreate, ProductUpdateStrings
 from api_v1.services.client_auth import ClientAuthService, AccessPayload
 from api_v1.repositories.jwt_token_service import PyJWTTokenService
 
+
+bearer_scheme = HTTPBearer()
 
 
 def text_data(

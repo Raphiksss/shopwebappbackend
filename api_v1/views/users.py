@@ -1,5 +1,4 @@
 import redis.asyncio as aioredis
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, status, Depends, Form, HTTPException
@@ -16,9 +15,7 @@ from api_v1.services.client_auth import ClientAuthService, AccessPayload
 from api_v1.services import admin_auth
 from core import settings, logger
 
-
 router = APIRouter(tags=["Users"])
-bearer_scheme = HTTPBearer()
 
 class LoginRequest(BaseModel):
     init_data: str
