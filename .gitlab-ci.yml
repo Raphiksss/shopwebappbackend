@@ -13,6 +13,7 @@ deploy:
       set -e
       cat > .env.tmp << EOF
       BOT_TOKEN=${BOT_TOKEN:?BOT_TOKEN is not set}
+      SECRET_JWT_KEY=${SECRET_JWT_KEY:SECRET_JWT_KEY is not set}
       ADMIN_TG_ID=${ADMIN_TG_ID:?ADMIN_TG_ID is not set}
       CRYPTO_BOT_TOKEN=${CRYPTO_BOT_TOKEN:?CRYPTO_BOT_TOKEN is not set}
       YOOMONEY_TOKEN=${YOOMONEY_TOKEN:?YOOMONEY_TOKEN is not set}
