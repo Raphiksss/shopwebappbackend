@@ -1,14 +1,16 @@
 from typing import Optional, Type
 
+from fastapi.security import HTTPAuthorizationCredentials
 from pydantic_core import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Form, UploadFile, File, HTTPException, Depends, status
 
+from api_v1.views.users import bearer_scheme
 from core.db_helper import get_session
 from core.models import Product, User
 from core.config import settings
 from api_v1.schemas.products import ProductCreate, ProductUpdateStrings
-from api_v1.services.client_auth import ClientAuthService
+from api_v1.services.client_auth import ClientAuthService, AccessPayload
 from api_v1.repositories.jwt_token_service import PyJWTTokenService
 
 
@@ -85,3 +87,6 @@ async def get_client_auth_service(session:AsyncSession = Depends(get_session)) -
     token_service = PyJWTTokenService(private_key=settings.CLIENT_AUTH.secret_key, public_key=None, algorithm=settings.CLIENT_AUTH.algorithm)
     return ClientAuthService(token_service=token_service, session=session)
 
+async def get_users_tg_id(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),auth_service: ClientAuthService = Depends(get_client_auth_service)):
+    user_data: AccessPayload = await auth_service.get_user_data(credentials.credentials)
+    return int(user_data.sub)

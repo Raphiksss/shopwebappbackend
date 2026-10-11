@@ -11,7 +11,7 @@ from ..repositories import users_repository
 from ..repositories.users import UserBy
 from ..schemas.general import ErrorResponse
 from ..services.Yoomoney import create_invoice, verify_webhook_signature
-from api_v1.views.dependencies import get_client_auth_service
+from api_v1.views.dependencies import get_client_auth_service, get_users_tg_id
 from api_v1.services.client_auth import ClientAuthService, AccessPayload
 from api_v1.services import admin_auth
 from core import settings, logger
@@ -45,9 +45,7 @@ async def login_user(login_data: LoginRequest, auth_service:ClientAuthService = 
     status_code=status.HTTP_200_OK,
     response_model=UserRead,
 )
-async def get_current_user_data(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme), auth_service: ClientAuthService = Depends(get_client_auth_service), session: AsyncSession = Depends(get_session)):
-    user_data: AccessPayload = await auth_service.get_user_data(credentials.credentials)
-    tg_id = int(user_data.sub)
+async def get_current_user_data(tg_id:int = Depends(get_users_tg_id), session: AsyncSession = Depends(get_session)):
     return await users_repository.get_user(session, UserBy.TG_ID, tg_id)
 
 @router.get(
@@ -56,7 +54,7 @@ async def get_current_user_data(credentials: HTTPAuthorizationCredentials = Depe
     status_code=status.HTTP_200_OK,
     response_model=list[UserRead],
 )
-async def get_users(session: AsyncSession = Depends(get_session)):
+async def get_users(session: AsyncSession = Depends(get_session), _=Depends(admin_auth.check_if_auth)):
     return await users_repository.get_users(session)
 
 
@@ -72,7 +70,7 @@ async def get_users(session: AsyncSession = Depends(get_session)):
         }
     },
 )
-async def create_user(user: UserCreate, session: AsyncSession = Depends(get_session)):
+async def create_user(user: UserCreate, session: AsyncSession = Depends(get_session), _=Depends(admin_auth.check_if_auth)):
     return await users_services.create_user(user, session)
 
 
@@ -85,7 +83,10 @@ async def create_user(user: UserCreate, session: AsyncSession = Depends(get_sess
         404: {"model": ErrorResponse, "description": "Пользователя не существует"}
     },
 )
-async def get_user(tg_id: int, session: AsyncSession = Depends(get_session)):
+async def get_user(tg_id: int,
+                   session: AsyncSession = Depends(get_session),
+                    _=Depends(admin_auth.check_if_auth),
+):
     return await users_services.get_user(session, UserBy.TG_ID, tg_id)
 
 
@@ -113,7 +114,7 @@ async def user_partial_update(
     summary="Создания счета на оплату звезды",
     status_code=status.HTTP_200_OK,
 )
-async def replenishment_balance(tg_id: int, amount: int):
+async def replenishment_balance(amount: int,tg_id: int = Depends(get_users_tg_id)):
     return await users_services.replenishment_balance_stars(tg_id, amount)
 
 
@@ -122,7 +123,7 @@ async def replenishment_balance(tg_id: int, amount: int):
     summary="Создания счета на оплату криптобот",
     status_code=status.HTTP_200_OK,
 )
-async def replenishment_balance_cr(tg_id: int, amount: int):
+async def replenishment_balance_cr(amount: int, tg_id: int = Depends(get_users_tg_id)):
     return await users_services.replenishment_balance_crypto_bot(tg_id, amount)
 
 
@@ -131,7 +132,7 @@ async def replenishment_balance_cr(tg_id: int, amount: int):
     summary="Создания счета на оплату Юмани",
     status_code=status.HTTP_200_OK,
 )
-async def replenishment_balance_yoomoney(tg_id: int, amount: int):
+async def replenishment_balance_yoomoney(amount: int, tg_id: int = Depends(get_users_tg_id)):
     return await create_invoice(tg_id, amount)
 
 

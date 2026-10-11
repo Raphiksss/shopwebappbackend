@@ -1,5 +1,7 @@
 from fastapi import APIRouter, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from .dependencies import get_users_tg_id
 from ..schemas.general import ErrorResponse
 from core.db_helper import get_session
 from ..services import favorites_services
@@ -7,13 +9,13 @@ from ..services import favorites_services
 router = APIRouter(tags=["Favorites"])
 
 
-@router.get("/{tg_id}/", summary="Get users favorites", status_code=status.HTTP_200_OK)
-async def get_favorites(tg_id: int, session: AsyncSession = Depends(get_session)):
+@router.get("/", summary="Get users favorites", status_code=status.HTTP_200_OK)
+async def get_favorites(session: AsyncSession = Depends(get_session), tg_id: int = Depends(get_users_tg_id)):
     return await favorites_services.get_favorites(tg_id, session)
 
 
 @router.post(
-    "/{tg_id}/",
+    "/",
     summary="Add Favorite",
     status_code=status.HTTP_201_CREATED,
     responses={
@@ -24,13 +26,13 @@ async def get_favorites(tg_id: int, session: AsyncSession = Depends(get_session)
     },
 )
 async def add_favorite(
-    tg_id: int, product_id: int, session: AsyncSession = Depends(get_session)
+    product_id: int, session: AsyncSession = Depends(get_session), tg_id: int = Depends(get_users_tg_id)
 ):
     return await favorites_services.add_favorite(tg_id, product_id, session)
 
 
 @router.delete(
-    "/{tg_id}/",
+    "/",
     summary="Delete favorite",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
@@ -41,6 +43,6 @@ async def add_favorite(
     },
 )
 async def delete_favorite(
-    tg_id: int, product_id: int, session: AsyncSession = Depends(get_session)
+    product_id: int, session: AsyncSession = Depends(get_session), tg_id: int = Depends(get_users_tg_id)
 ):
     return await favorites_services.delete_favorite(tg_id, product_id, session)

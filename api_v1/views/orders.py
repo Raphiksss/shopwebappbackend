@@ -2,6 +2,8 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends
 from starlette import status
+
+from .dependencies import get_users_tg_id
 from ..schemas.general import ErrorResponse
 
 from core.db_helper import get_session
@@ -14,7 +16,7 @@ router = APIRouter(tags=["Orders"])
 
 
 @router.post("/", summary="Create Order", status_code=status.HTTP_201_CREATED)
-async def create_order(tg_id: int, session: AsyncSession = Depends(get_session)):
+async def create_order(session: AsyncSession = Depends(get_session), tg_id:int = Depends(get_users_tg_id)):
     res = await orders.create_order(tg_id, session)
     return res
 
