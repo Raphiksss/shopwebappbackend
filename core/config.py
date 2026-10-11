@@ -34,7 +34,7 @@ class DB_Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 class ClientAuthSettings(BaseSettings):
-    secret_key: str = Field(default="1", alias="SECRET_JWT_KEY")
+    secret_key: str = Field(alias="SECRET_JWT_KEY")
     algorithm: str = "HS256"
     access_til_days: int = 5
 
