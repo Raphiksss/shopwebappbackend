@@ -111,7 +111,7 @@ async def user_partial_update(
     summary="Создания счета на оплату звезды",
     status_code=status.HTTP_200_OK,
 )
-async def replenishment_balance(amount: int,tg_id: int = Depends(get_users_tg_id)):
+async def replenishment_balance(amount: int, tg_id: int = Depends(get_users_tg_id)):
     return await users_services.replenishment_balance_stars(tg_id, amount)
 
 

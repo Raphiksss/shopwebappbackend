@@ -60,7 +60,6 @@ async def stars_buying(tg_id: int, amount: int):
     stars_exchange_rate = None
     async with aioredis.Redis(host=REDIS_HOST, port=REDIS_PORT) as r:
         stars_exchange_rate = await r.get("stars_exchange_rate")
-        print(float(stars_exchange_rate))
     if not stars_exchange_rate:
         stars_exchange_rate = settings.BOT.stars_exchange_rate
     await bot.send_invoice(
