@@ -14,7 +14,6 @@ class UserRead(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-
 class UserPartialUpdate(BaseModel):
     username: str | None = Field(default=None)
     balance: int | None = Field(default=None)
