@@ -127,4 +127,5 @@ async def set_payments_methods(payments: PaymentMethods, _=Depends(check_if_auth
     "/payment_methods/", summary="Get payment_methods", response_model=PaymentMethods
 )
 async def payments_methods():
-    return await get_payment_methods()
+    payments = await get_payment_methods()
+    return payments or {"stars": True, "crypto_bot": False, "yoomoney": False}

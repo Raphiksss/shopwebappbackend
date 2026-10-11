@@ -157,9 +157,7 @@ async def pre_checkout_handler(pre_checkout_query: PreCheckoutQuery):
 @router.message(F.successful_payment)
 async def successful_payment_handler(message: types.Message):
     payment_info = message.successful_payment
-    # Конвертируем звезды обратно в рубли (payment_info.total_amount содержит количество звезд)
-    # Используем math.ceil для округления к верхней границе
-    rubles_amount = math.ceil(payment_info.total_amount / 1.2)
+    rubles_amount = int(payment_info.invoice_payload.split("_")[2])
     async for session in get_session():
         await users_repository.add_balance(
             message.from_user.id, rubles_amount, session=session
